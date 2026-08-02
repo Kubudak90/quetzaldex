@@ -10,7 +10,7 @@
 
 Quetzal is a decentralized exchange in which **order flow is private until the moment it can no longer be exploited**. Traders commit hidden orders into epoch-based batches on Aztec's private L2; a permissionless aggregator network discovers a single uniform clearing price per epoch against concentrated-liquidity pools; and a zero-knowledge circuit proves — on-chain, before any funds move — that the clearing was computed honestly from exactly the orders that were committed. Nobody, including the aggregator, can front-run, sandwich, or selectively censor what they cannot see or forge.
 
-v0.1 is live on Aztec alpha-testnet with the full pipeline validated end-to-end: hidden order submission, multi-pool price discovery, ZK proof generation, and on-chain verified settlement with conservation checks.
+Quetzal is live on Aztec alpha-testnet with the full pipeline validated end-to-end on chain: hidden order submission, multi-pool price discovery, ZK proof generation, verified settlement with conservation checks, and the maker redeeming the proven fill.
 
 ---
 
@@ -100,7 +100,7 @@ Traders then claim fills privately; the payout is the circuit-proven `payout_at_
 
 ### 3.5 Operational self-healing
 
-Running a privacy DEX against a young L2 taught us that correctness guarantees must extend to *operations*. v0.1 ships with battle-tested guards, each born from a real incident on testnet:
+Running a privacy DEX against a young L2 taught us that correctness guarantees must extend to *operations*. The deployment ships with battle-tested guards, each born from a real incident on testnet:
 
 - **Anchor-drift repair.** Reveal metadata can drift when L2 reorgs stall private-state sync. The daemon searches bounded corrections and accepts only a combination that the on-chain accumulator confirms — self-healing without weakening the trust model.
 - **Fee pre-flight.** Settlement is gated on the fee-payer's balance *before* the reveal queue is consumed, so a broke operator wallet delays clearing instead of stranding orders.
@@ -126,18 +126,19 @@ Running a privacy DEX against a young L2 taught us that correctness guarantees m
 
 **Fee juice.** Aztec transactions are paid in fee juice bridged from L1. The Quetzal faucet provisions new users in one request: test tokens minted directly to the recipient plus a fee-juice claim that an onboarding wallet redeems automatically — solving the "need gas to get gas" cold-start without custodial workarounds.
 
-**Protocol fees.** Pool swap fees accrue to LPs via per-share accumulators; a treasury contract receives the protocol's share. Fee parameters are deploy-time configuration in v0.1.
+**Protocol fees.** Pool swap fees accrue to LPs via per-share accumulators; a treasury contract receives the protocol's share. Fee parameters are deploy-time configuration.
 
-## 6. v0.1: what is live and what is validated
+## 6. What is live and what is validated
 
 Running now on Aztec alpha-testnet (`quetzaldex.xyz`):
 
-- **App** — onboarding wizard (wallet + faucet + fee-juice claim), private trading UI, bridge UI (USDC/WETH), LP and history views.
+- **App** — onboarding wizard (wallet + faucet + fee-juice claim), private trading UI, bridge UI (USDC/WETH), LP and history views; responsive down to phone widths.
 - **Protocol** — orderbook with epochs + accumulator; 3 concentrated pools (USDC/ETH, USDC/BTC, ETH/BTC); aggregator registry with one bonded aggregator; clearing daemon with multi-pool support.
 - **Faucet** — public drip page with reCAPTCHA v3, per-IP and daily caps, claim-package download.
 - **Validated on-chain** (not simulated — live testnet transactions):
+  - the **complete lifecycle in one run** — order placed, revealed, cleared, and the fill redeemed by its maker via `claim_fill` against the on-chain fills root, with the private balance moving by exactly the proven `amount_out`;
   - first honest settle-with-fills, and later the first **multi-pool** settlement (3 pools / 3 fills / one proof);
-  - flow-binding conservation after settlement;
+  - flow-binding conservation after settlement, cross-checked against the pool's own reserve deltas;
   - adversarial acceptance: fabricated pool state, wrong pool id, and mismatched flows all revert with exact errors;
   - L1↔L2 bridge deposit and claim with on-chain balance deltas;
   - faucet drip end-to-end through the public page.
@@ -168,4 +169,4 @@ Running now on Aztec alpha-testnet (`quetzaldex.xyz`):
 
 ---
 
-*This document describes testnet software under active development. Nothing here is an offer of securities or financial advice. Parameters cited reflect the v0.1 deployment and may change.*
+*This document describes testnet software under active development. Nothing here is an offer of securities or financial advice. Parameters cited reflect the current alpha-testnet deployment and may change.*

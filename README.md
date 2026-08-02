@@ -27,8 +27,8 @@ trading on 3 pairs (USDC/ETH, USDC/BTC, ETH/BTC), L1↔L2 bridging (Sepolia USDC
 LP deposits/withdrawals, a public faucet with reCAPTCHA v3, and a permissionless
 clearing-aggregator daemon. The full pipeline — hidden commit → off-chain reveal →
 multi-pool uniform-price clearing → UltraHonk proof → on-chain verified settlement
-with conservation checks — is validated with live testnet transactions, including
-adversarial cases that must (and do) revert.
+with conservation checks → the maker redeeming the proven fill — is validated with
+live testnet transactions, including adversarial cases that must (and do) revert.
 
 ## How it works
 

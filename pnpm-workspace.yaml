@@ -1,0 +1,10 @@
+packages:
+  - 'tests/**'
+  - 'aggregator'
+  - 'cli'
+  - 'sdk'
+  - 'examples'
+  - 'frontend'
+  - 'faucet'
+  - 'tools/outbox-proof'
+  - 'tools/exporters'

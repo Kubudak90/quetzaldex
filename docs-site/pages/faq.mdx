@@ -1,0 +1,101 @@
+---
+title: FAQ
+---
+
+# FAQ
+
+## Is this safe to use with real money?
+
+**No.** Quetzal is in testnet alpha. Tokens are testnet-only and have no value. The L1 bridge contracts on Sepolia are production-grade UUPS, but the L2 side runs on Aztec testnet, which is regularly redeployed by Aztec Labs. No external audit yet — engagement is still pending, and there is no mainnet deploy until one lands.
+
+## Who can see my orders?
+
+While an order is sealed (between submit + clearing): nobody can read its side, amount, or limit price. The on-chain note commitment proves *something* was submitted, but the encrypted content is only readable by you (note encryption keys).
+
+Once you reveal an order to the aggregator (so it can be included in the clearing), the aggregator sees plaintext. Sub-6d (T-of-N threshold or rotating-aggregator commitments) is the long-term mitigation. Today, every aggregator is reputational.
+
+The on-chain `fills_root` is public + cleartext. But it's a Merkle root, not a fill list — reading it tells you nothing without an inclusion proof, and an inclusion proof requires knowing the leaf, which in turn requires knowing the `order_nonce`. That's effectively a private capability tied to your wallet.
+
+## Are LP positions private?
+
+Yes. Your `PositionNote` (bucket id, lp share, fee-accrual baseline, owner) is a private note. Aggregate per-bucket state (reserves, liquidity, cum fee) is public — anyone can see how much liquidity is in bucket 8 of pool 0 — but they can't tell *whose* it is.
+
+## Why is there an epoch delay instead of continuous trading?
+
+Frequent batch auctions are the central anti-MEV mechanism. If trades clear continuously, the next order can be sniped — a searcher can see your tx in the mempool + front-run it. If trades batch + clear at a uniform price, there is no "next" order; every order in the batch settles at the same price, and the ordering of submits doesn't matter.
+
+10 L2 blocks (~15–25 min on testnet) is the current trade-off between batching latency + UX. Production / mainnet may run shorter epochs once the protocol is hardened.
+
+## What if no one clears my epoch?
+
+Anyone can clear, but the bonded-race / Treasury-fee model rewards a winner. As long as one aggregator is alive + online, your epoch gets cleared.
+
+If no aggregator clears (genuine liveness failure), orders carry forward into the next epoch. They are still escrowed in the orderbook + can be cancelled at any time before clearing. You don't lose anything except wall-clock time.
+
+## What happens if I cancel an order before it's filled?
+
+`cancel_order` is permissionless (anyone can call it for *their own* orders), nullifies the OrderNote, and returns the escrowed input token to your **private** balance. The escrow round-trip is symmetric with `submit_order`.
+
+Edge case: cancelling a partially-filled order returns only the unfilled remainder. The filled portion has already been claimed (or is claimable) via `claim_fill`.
+
+Edge case 2: don't cancel a 2-hop order in the same epoch you submitted it. There's an open race window in the per-hop nullifier scheme (Sub-4 carry-forward item 1). It will be closed in a future sub-project.
+
+## How do I get my money out?
+
+Testnet tokens have no real value, so you don't need to — but the hybrid tokens (tUSDC, tETH) ARE bridgeable: use the [bridge](/bridge) `Exit` tab. Public exit → L2 balance burned + L1 outbox message → wait ~30 min for the epoch to prove on L1 → press *Withdraw on L1* → MetaMask signs → L1 tokens hit your wallet.
+
+## Why is the faucet so slow?
+
+A single drip is three on-chain operations:
+
+1. L1 deposit of fee-juice (~12s for Sepolia confirmation)
+2. L2 inbox ingestion (~6–10 min)
+3. L2 mint of tUSDC + tETH (~1–2 min each for ClientIVC proof gen)
+
+End-to-end is 2–4 min, dominated by step 2. There is no shortcut today; the L1 → L2 finality is set by the Aztec sequencer.
+
+## Why am I getting `429 too many requests` from the faucet?
+
+You exceeded **4 drips per IP per 8 hours**. Wait, or use a different network. If you're testing an integration, talk to the operator about a bypass key.
+
+## Can I run my own aggregator?
+
+Yes. The aggregator code is in `aggregator/`. You need:
+
+- A funded Aztec L2 wallet
+- A bond posted to `AggregatorRegistry` via `client.aggregator.register()`
+- `nargo` + `bb` binaries (~1 GB of toolchain)
+- A VPS (the existing one is at `161.97.110.1`; the reference Docker setup lives in `aggregator/Dockerfile`)
+
+See `aggregator/ops/RUNBOOK-aggregator.md` for the full setup. Today the testnet runs a single reference aggregator; the bonded race is designed but not yet contested.
+
+## Why do I see different addresses than the docs?
+
+Aztec testnet is regularly redeployed by Aztec Labs (rollup version bumps, sequencer resets). Quetzal redeploys against the new chain when that happens, and `quetzal.config.json` updates with new addresses. Legacy snapshots (`m1_legacy`, `m3_legacy`, `m4_legacy`, etc.) are preserved in the config for historical reference.
+
+If you're using the SDK, point `contracts` at the current `quetzal.config.json` in the repo and you'll always get fresh addresses.
+
+## When mainnet?
+
+The 1.5+ year audit gate is the headline blocker. `contracts-l1/AUDIT.md` is the audit scope (Slither report + threat model already shipped); external audit firm engagement is pending.
+
+The protocol-level dependencies (Aztec mainnet readiness) are also out of Quetzal's control. The bridge runbook bakes in a 90-day cap ramp from $10k → unlimited on mainnet to limit blast radius during the post-audit observation period.
+
+## Where can I report a bug or vulnerability?
+
+- Non-security bugs: [github.com/Kubudak90/quetzal/issues](https://github.com/Kubudak90/quetzal/issues)
+- Security: the audit channel is being set up; for now, open a private GitHub security advisory at [github.com/Kubudak90/quetzal/security](https://github.com/Kubudak90/quetzal/security) or email the operator (contact via the GitHub profile).
+
+## How is Quetzal different from Penumbra Quetzal?
+
+Quetzal-on-Aztec is an open-source port of the protocol design — frequent batch auction with uniform clearing price + private state. Penumbra runs on Cosmos with its own consensus + bespoke ZK proving stack. Quetzal-on-Aztec uses Aztec's native private note model + Aztec's existing rollup + ClientIVC proving, which removes the need for the protocol to ship its own validator set.
+
+In practice, both protocols agree on the high-level design (sealed orders, uniform clearing, private LP positions). The implementation surface (Noir vs. Penumbra's bespoke circuits, Aztec L1 bridge vs. IBC) is entirely different.
+
+## Is this affiliated with Penumbra Labs?
+
+No. Quetzal-on-Aztec is an independent open-source port that takes inspiration from Penumbra's protocol design. Credit to the Penumbra team for the original protocol.
+
+## Is this affiliated with Aztec Labs?
+
+No. We build on Aztec Network the way an app builds on Ethereum. We coordinate with Aztec Labs on testnet operational issues (e.g. the [Sub-9.7 Quicknode L1 RPC throttling](/getting-started/faucet#troubleshooting)), but Quetzal is an independent project.

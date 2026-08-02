@@ -1,0 +1,77 @@
+---
+title: Getting started
+---
+
+import { Callout, Steps } from 'nextra/components';
+
+# Getting started
+
+Quetzal runs entirely in the browser today. There is nothing to install. You bring a wallet, drip from the faucet, and start trading.
+
+## What you need
+
+- A modern browser (Chrome, Firefox, Brave, or Edge).
+- Optional: [MetaMask](https://metamask.io/) — only required if you want to bridge from L1 Sepolia.
+- Optional: a small amount of Sepolia ETH — only required if you want to bridge from L1.
+
+You do **not** need MetaMask to trade. The default flow generates an Aztec-native wallet pool in your browser and funds it from the faucet.
+
+## First-time walkthrough
+
+<Steps>
+
+### Open the app
+
+Visit [quetzaldex.xyz](https://quetzaldex.xyz). You will land on the [landing screen](https://quetzaldex.xyz/) with the wallet-mode picker.
+
+### Pick a wallet mode
+
+You have two choices:
+
+- **Aztec Wallet** — uses the Aztec browser extension. One account, one signer. Good for casual use.
+- **Wallet Pool** *(recommended)* — N HD-derived child wallets that round-robin. Best for active traders because every Aztec wallet has a per-wallet limit of ~18 unfinalised private submits ([PXE tagging window](/getting-started/wallet#why-a-pool)). A pool of 3 gives ~48 simultaneous orders, a pool of 5 gives ~84.
+
+The wizard defaults to a 3-wallet pool.
+
+### Save your master secret
+
+For the wallet pool, the wizard generates a fresh 64-character hex master secret. **Save it to your password manager.**
+
+All N child wallets are derived deterministically from this secret: same secret, same child addresses. Lose it and you lose every wallet in the pool — there is no recovery flow.
+
+### Drip from the faucet
+
+The wizard automatically calls the [Quetzal faucet](https://faucet.quetzaldex.xyz) once per child wallet. Each drip lands three things on Aztec:
+
+- 50 fee-juice (Aztec's native gas)
+- 1,000 tUSDC (Quetzal's test stablecoin)
+- 0.5 tETH (Quetzal's test ETH)
+
+A drip takes 2–4 minutes per child wallet because of the ClientIVC proof generation + L1 → L2 finalisation. The wizard shows live progress.
+
+<Callout type="info">
+  The faucet is rate-limited at **4 drips per IP per 8 hours** (sliding window). If you exhaust that limit while testing, see [Get test tokens → troubleshooting](/getting-started/faucet#troubleshooting).
+</Callout>
+
+### Enter Quetzal
+
+When all N children land their drips, the wizard finalises the connection. You are now on `/trade`. Pool 0 is USDC/ETH and ships seeded with 5,000 tUSDC. Place a sealed order at the chartreuse "Place order" button.
+
+</Steps>
+
+## Verifying it worked
+
+Open the [aggregator health endpoint](https://aggregator.quetzaldex.xyz/health):
+
+```bash
+curl -s https://aggregator.quetzaldex.xyz/health
+```
+
+You should see `ok: true` plus a `watcher.status: "polling"` line — that's the off-chain aggregator confirming it sees your epoch's reveals.
+
+## Next steps
+
+- [Get test tokens](/getting-started/faucet) — manually drip without the wizard
+- [Wallet pool](/getting-started/wallet) — why a pool exists, capacity math, recovery
+- [How clearing works](/trading) — what happens when you press *Place order*
+- [Bridge L1 ↔ L2](/bridge) — move real Sepolia tokens to play with bridged balances

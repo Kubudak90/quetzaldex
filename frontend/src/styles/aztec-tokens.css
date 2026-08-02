@@ -1,0 +1,244 @@
+/* ============================================================
+   Aztec Design System — Tokens
+   Source of truth: aztec.network/media (press kit, Sept 2025)
+   ============================================================ */
+
+/* Open-source typeface stack (substituted for the brand's
+   licensed Arizona / Oracle / MD Thermochrome / Francesco set).
+   See README.md → "Typography substitutions". */
+@import url("https://fonts.googleapis.com/css2?family=Martel:wght@200;300;400;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Workbench&display=swap");
+
+:root {
+  /* ---------- Palette (Aztec press kit) ---------- */
+  --aztec-parchment: #F2EEE1;
+  --aztec-ink:       #1A1400;
+  --aztec-chartreuse:#D4FF28;  /* PRIMARY accent */
+  --aztec-orchid:    #FF2DF4;  /* SECONDARY accent */
+  --aztec-aqua:      #2BFAE9;
+  --aztec-vermillion:#FF1A1A;
+  --aztec-malachite: #001F18;
+  --aztec-aubergine: #2E0026;
+  --aztec-lapis:     #00122E;
+  --aztec-oxblood:   #2E0700;
+
+  /* ---------- Semantic surface / ink ---------- */
+  --bg:            var(--aztec-parchment);
+  --bg-alt:        #EAE5D5;          /* slight step on parchment */
+  --bg-inverse:    var(--aztec-ink);
+  --bg-deep:       var(--aztec-malachite);  /* hero / panel */
+  --surface:       #FFFFFF;
+  --surface-card:  #F8F5EA;
+
+  --fg:            var(--aztec-ink);
+  --fg-muted:      #5C5640;          /* ink mixed with parchment */
+  --fg-subtle:     #8A8470;
+  --fg-on-deep:    var(--aztec-parchment);
+  --fg-on-deep-mu: #A8A48F;
+
+  --hairline:      rgba(26, 20, 0, 0.10);
+  --hairline-strong: rgba(26, 20, 0, 0.20);
+  --hairline-on-deep: rgba(242, 238, 225, 0.12);
+
+  /* ---------- Semantic accents ---------- */
+  --accent:           var(--aztec-chartreuse);
+  --accent-ink-on:    var(--aztec-ink);   /* always Ink on Chartreuse */
+  --accent-secondary: var(--aztec-orchid);
+  --accent-tertiary:  var(--aztec-aqua);
+  --accent-warn:      var(--aztec-vermillion);
+
+  /* Wallet-specific semantics (Celari UI kit) */
+  --priv:    var(--aztec-vermillion); /* private state — red dot */
+  --pub:     var(--aztec-aqua);       /* public state — ring */
+  --proving: #D4A24A;                 /* amber, in-flight proof */
+
+  /* ---------- Type families ---------- */
+  --font-display: "Martel", "EB Garamond", "Iowan Old Style", Georgia, serif;
+  --font-serif:   "EB Garamond", "Iowan Old Style", Georgia, serif;
+  --font-body:    "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono:    "Geist Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display-alt: "Workbench", "Geist Mono", monospace;  /* "Evenly" / techno H3 */
+
+  /* ---------- Type scale (modular, anchored to body 16px) ---------- */
+  --fs-xs:   12px;
+  --fs-sm:   14px;
+  --fs-base: 16px;
+  --fs-md:   18px;
+  --fs-lg:   22px;
+  --fs-xl:   28px;
+  --fs-2xl:  40px;
+  --fs-3xl:  60px;
+  --fs-4xl:  96px;
+  --fs-5xl:  140px;
+
+  /* ---------- Spacing (4-pt grid) ---------- */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  20px;
+  --sp-6:  24px;
+  --sp-8:  32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-20: 80px;
+  --sp-24: 96px;
+  --sp-32: 128px;
+
+  /* ---------- Radii ---------- */
+  --r-xs: 2px;     /* hairline chips, dots */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 10px;
+  --r-xl: 16px;
+  --r-pill: 999px;
+
+  /* ---------- Shadows ----------
+     Aztec leans flat; shadows are RARE.
+     Used mostly for floating menus / popovers, never on cards. */
+  --shadow-pop:  0 1px 2px rgba(26,20,0,0.06), 0 8px 24px rgba(26,20,0,0.10);
+  --shadow-deep: 0 1px 2px rgba(0,0,0,0.4), 0 16px 48px rgba(0,0,0,0.45);
+
+  /* ---------- Motion ---------- */
+  --ease-out:    cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-inout:  cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast:    120ms;
+  --dur-base:    200ms;
+  --dur-slow:    320ms;
+
+  /* ---------- Layout ---------- */
+  --col-max: 1280px;
+  --gutter:  32px;
+}
+
+/* ============================================================
+   Base / semantic element styles
+   ============================================================ */
+
+html, body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Body text variants */
+.body-lg { font-size: var(--fs-md); line-height: 1.5; }
+.body    { font-size: var(--fs-base); line-height: 1.5; }
+.body-sm { font-size: var(--fs-sm); line-height: 1.45; }
+.caption { font-size: var(--fs-xs); line-height: 1.4; color: var(--fg-muted); letter-spacing: 0; }
+
+/* Display headings — serif, light weight, italic-break is Aztec's signature.
+   Apply <em> inside an h1 to break a word into italic — e.g. <h1>Az<em>tec</em></h1>. */
+h1, .h1 {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: var(--fs-4xl);
+  line-height: 1.0;
+  letter-spacing: -0.05em;
+  margin: 0;
+}
+h1 em, .h1 em { font-style: italic; font-weight: 300; }
+
+h2, .h2 {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: var(--fs-2xl);
+  line-height: 1.0;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+h3, .h3 {
+  font-family: var(--font-display-alt);  /* "Evenly" feel via Workbench */
+  font-weight: 400;
+  font-size: var(--fs-xl);
+  line-height: 0.95;
+  letter-spacing: 0;
+  margin: 0;
+  text-transform: none;
+}
+
+h4, .h4 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: var(--fs-lg);
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+p { margin: 0 0 var(--sp-4); max-width: 64ch; text-wrap: pretty; }
+p:last-child { margin-bottom: 0; }
+
+a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--hairline-strong);
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--dur-fast) var(--ease-out);
+}
+a:hover { text-decoration-color: currentColor; }
+
+code, kbd, samp, .mono {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  letter-spacing: 0;
+}
+
+hr { border: 0; border-top: 1px solid var(--hairline); margin: var(--sp-8) 0; }
+
+/* Selection */
+::selection { background: var(--aztec-chartreuse); color: var(--aztec-ink); }
+
+/* ---------- Eyebrow — small caps mono label ---------- */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+/* ---------- Button primitives (cosmetic only) ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 44px;
+  padding: 0 var(--sp-5);
+  border-radius: var(--r-pill);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  letter-spacing: 0;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+  text-decoration: none;
+}
+.btn:active { transform: translateY(1px); }
+
+.btn-primary { background: var(--aztec-chartreuse); color: var(--aztec-ink); }
+.btn-primary:hover { background: #C2EC1A; }
+
+.btn-ink     { background: var(--aztec-ink); color: var(--aztec-parchment); }
+.btn-ink:hover { background: #2A2206; }
+
+.btn-ghost   { background: transparent; color: var(--fg); border-color: var(--hairline-strong); }
+.btn-ghost:hover { border-color: var(--fg); }
+
+.btn-on-deep { background: transparent; color: var(--fg-on-deep); border-color: var(--hairline-on-deep); }
+.btn-on-deep:hover { border-color: var(--fg-on-deep); }

@@ -1,0 +1,19 @@
+{
+  "name": "@quetzal/examples",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "01": "tsx 01-place-order.ts",
+    "02": "tsx 02-bridge-deposit.ts",
+    "03": "tsx 03-bulk-with-decoys.ts"
+  },
+  "dependencies": {
+    "@quetzal/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

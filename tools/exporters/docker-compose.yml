@@ -1,0 +1,73 @@
+version: "3.9"
+
+services:
+  l1-exporter:
+    build:
+      context: ../..
+      dockerfile: tools/exporters/Dockerfile.exporter
+      args:
+        TARGET: l1
+    environment:
+      QUETZAL_CONFIG: /config/quetzal.config.json
+      PORT: "9100"
+    volumes:
+      - "../../quetzal.config.json:/config/quetzal.config.json:ro"
+    ports:
+      - "9100:9100"
+    restart: unless-stopped
+
+  l2-exporter:
+    build:
+      context: ../..
+      dockerfile: tools/exporters/Dockerfile.exporter
+      args:
+        TARGET: l2
+    environment:
+      QUETZAL_CONFIG: /config/quetzal.config.json
+      PORT: "9101"
+    volumes:
+      - "../../quetzal.config.json:/config/quetzal.config.json:ro"
+    ports:
+      - "9101:9101"
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.50.0
+    volumes:
+      - "../../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+      - "../../prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro"
+      - "prometheus-data:/prometheus"
+    ports:
+      - "9090:9090"
+    depends_on:
+      - l1-exporter
+      - l2-exporter
+      - alertmanager
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    volumes:
+      - "../../prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro"
+    ports:
+      - "9093:9093"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    volumes:
+      - "../../grafana/dashboards:/var/lib/grafana/dashboards:ro"
+      - "../../grafana/provisioning:/etc/grafana/provisioning:ro"
+      - "grafana-data:/var/lib/grafana"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-changeme}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:
+  grafana-data:

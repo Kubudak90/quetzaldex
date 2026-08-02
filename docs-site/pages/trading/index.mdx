@@ -1,0 +1,134 @@
+---
+title: How clearing works
+---
+
+import { Callout } from 'nextra/components';
+
+# How clearing works
+
+Quetzal is a frequent batch auction. There is no continuous order book. Every fixed-length epoch, all orders submitted during that epoch settle simultaneously at one uniform clearing price, derived from those orders + the AMM pool's reserves.
+
+This page walks the order's life cycle: place, seal, batch, clear, claim.
+
+## The four-step picture
+
+1. **You submit a sealed order.** Side, amount, and limit price are encrypted inside an Aztec note. The orderbook contract knows you've placed *something* but cannot read what.
+2. **The protocol batches all orders in the current epoch.** Epoch = 10 L2 blocks ≈ 15–25 min on testnet.
+3. **At epoch close, a single uniform clearing price is computed.** A permissionless aggregator collects every order, runs the clearing algorithm, generates a ZK proof, and submits it on chain. The orderbook contract verifies the proof recursively.
+4. **Fills land in your private balance.** You call `claim_fill` with a Merkle inclusion proof against the per-epoch `fills_root`. Nobody can tell who traded what.
+
+## Anatomy of a sealed order
+
+When you call `client.orders.placeOrder(...)`, the SDK packs:
+
+```
+OrderNote {
+  submitted_at_block: u32,        // public, used for FIFO + epoch binding
+  side: bool,                      // private; true = sell canonical-high
+  amount_in: u128,                 // private
+  limit_price: u128,               // private
+  nonce: Field,                    // private; one-time identifier
+  path: [Field; 3],                // public; canonical lex-sorted endpoints
+  path_len: u32,                   // public; 2 = 1-hop, 3 = 2-hop
+  owner: AztecAddress,             // private
+}
+```
+
+…into a private note + escrows the input token from your private balance into the orderbook's public balance. The escrow is mandatory; without it the protocol can't trustlessly settle. See [Privacy guarantees](#privacy-guarantees) below for what this leaks and doesn't.
+
+**Path canonicalization.** Quetzal forbids leaking trade direction through path ordering. The contract asserts `path[0] < path[last]` (u128-truncated lexicographic compare). The SDK transparently rewrites `path` + flips `side` if you pass a reversed path. Post-canonical semantics:
+
+- `side: 'buy'` → pay `path[0]` (canonical-low), receive `path[last]` (high)
+- `side: 'sell'` → pay `path[last]` (high), receive `path[0]` (low)
+
+So a "sell ETH for USDC" and a "buy USDC with ETH" produce identical on-chain notes.
+
+## Epochs
+
+A Quetzal orderbook publishes a public `EpochState`:
+
+```
+EpochState {
+  epoch_id: u32,
+  state: u8,              // OPEN | CLOSING | SETTLED
+  closes_at_block: u32,
+}
+```
+
+`EPOCH_LENGTH` is set at deploy time. The current testnet (Sub-9.4) uses **EPOCH_LENGTH = 10 L2 blocks**, which is ~15–25 minutes given Aztec testnet's variable block rate (~95–240 s/block).
+
+Anyone can call `close_epoch()` once `block_number >= closes_at_block`. It is permissionless and gas-cheap. It does nothing except advance `epoch_id` + reset `closes_at_block`. Orders submitted during the closed epoch are *not* yet cleared — they carry forward into the next epoch unless an aggregator races a clearing tx.
+
+## Computing the clearing price
+
+This is the aggregator's job. For every epoch with at least one revealed order:
+
+1. **Collect reveals.** Users (or their relayers) broadcast a `RevealPayload` to the aggregator's `POST /reveal` endpoint. The reveal contains the plaintext side + amount + price for the order.
+2. **Replay the on-chain accumulator.** The aggregator folds every reveal through the same Poseidon2 hash chain the orderbook contract built. If the replayed accumulator doesn't match the on-chain `order_acc`, *some* reveal in the batch was tampered with — the aggregator drops it.
+3. **Find the clearing price `P*`.** Bisect a price where (buys cleared at P*) = (sells cleared at P*). On the no-eligible-orders plateau, a direction sentinel steers off it. See `aggregator/src/clearing.ts` if you want the math.
+4. **Compute fills.** Eligible buys/sells cross peer-to-peer at P*. Any net imbalance routes through the AMM pool, paying the 0.3% swap fee.
+5. **Build the Merkle fills tree.** Each fill becomes a leaf `poseidon2(order_nonce, claimed_amount_out, epoch_id, leaf_index)`. The root is the `fills_root[epoch_id]`.
+6. **Prove + submit.** The aggregator generates a ClientIVC proof of the clearing circuit and calls `close_epoch_and_clear_verified(public_inputs, proof)`. The orderbook does a `std::verify_proof_with_type` recursive verify, then writes `fills_root[epoch_id]` if it passes.
+
+The clearing circuit (Sub-1 + Sub-2.5 + Sub-4) currently fixes:
+
+- `MAX_ORDERS_PER_EPOCH = 128`
+- `MAX_NUM_POOLS = 8` (testnet runs with 3)
+- 16 buckets per pool (concentrated-LP V3 math, 1.5× geometric spacing)
+- 4 active buckets per pool per clearing
+- Bridge constants: 500-field proof, 115-field VK, ~281K gates
+
+## Claiming a fill
+
+Once `fills_root[epoch_id]` is written, you call `claim_fill`:
+
+```ts
+const claimed = await client.orders.claimFill({
+  nonce: 0xabcn,                                  // bigint, not a string
+  epoch: 47,
+  aggregatorUrl: 'https://aggregator.quetzaldex.xyz', // in-app you can omit this ('/api')
+});
+```
+
+The SDK fetches your hop's inclusion proof from the aggregator's `GET /proof`, then calls the 7-arg `claim_fill`. The contract recomputes the owner-bound leaf, verifies it against the on-chain `fills_root[epoch_id]`, nullifies the claim so it can't be replayed, and credits your private balance.
+
+You don't need to claim immediately. The fills root is persistent. But until you do, the output token sits in the orderbook contract's public balance.
+
+<Callout type="info">
+  Partial fills are credited as one leaf per filled portion. If your order doesn't fully fill in one epoch, the unfilled remainder carries forward into the next epoch automatically. You only claim each filled portion once.
+</Callout>
+
+## Privacy guarantees
+
+**What stays private:**
+
+- Order side, amount, limit price (sealed in the note).
+- Path direction (canonicalized + side-flipped).
+- Order owner (the note's `owner` field is encrypted with the recipient's address keys).
+- Pool position bucket assignment for LPs.
+
+**What is public, by construction:**
+
+- That *someone* placed an order in epoch N (the note commitment hits the on-chain merkle tree).
+- The token pair (path endpoints — encrypted addresses leak the pair, not the direction).
+- The aggregate clearing price `P*` per epoch.
+- Aggregate volume cleared per epoch + per pool.
+- The total set of `order_acc` accumulator updates per epoch.
+
+**What is statistical:**
+
+- Timing correlation between a deposit, a place_order, and a claim_fill can deanonymize a single-shot user. The K-decoy [anonymity-set submit](https://github.com/Kubudak90/quetzal/blob/main/sdk/src/orders.ts) (`placeOrderBulk` with `decoyCount > 0`) reduces this by emitting K extra indistinguishable orders in the same epoch.
+- The aggregator sees plaintext reveals during clearing. There is one aggregator per epoch (winner of the bonded race). If that aggregator logs reveals, anyone with access to its logs sees plaintext. Sub-6d (T-of-N multi-sig aggregator) is the long-term mitigation. For now, every aggregator is reputational.
+
+**What is NOT private (AUDIT items):**
+
+- T-13: deposit ↔ claim temporal linkage on bridge usage.
+- T-15: escrow-side direction leak — `Token.transfer_private_to_public` reveals which token was escrowed, which narrows side for 2-hop orders.
+
+See [Architecture → Trust assumptions](/architecture#trust-assumptions) for the full list.
+
+## Next
+
+- [Multi-pair routing](/trading/multi-hop) — 2-hop swaps across three pools
+- [SDK reference](/reference/sdk) — placeOrder, claimFill, cancelOrder
+- [Architecture](/architecture) — the full system picture

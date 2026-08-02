@@ -1,0 +1,228 @@
+---
+title: Architecture
+---
+
+import { Callout } from 'nextra/components';
+
+# Architecture
+
+Quetzal is three tiers running across two chains.
+
+<svg
+  viewBox="0 0 880 720"
+  xmlns="http://www.w3.org/2000/svg"
+  role="img"
+  aria-label="Quetzal system architecture: Browser tier on top, Aggregator VPS and Aztec L2 in the middle, Ethereum Sepolia at the bottom."
+  style={{ width: '100%', height: 'auto', maxWidth: 880, margin: '24px auto', display: 'block', fontFamily: 'var(--nextra-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)' }}
+>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#B5CC18" />
+    </marker>
+    <style>{`
+      .box { fill: rgba(255,255,255,0.02); stroke: currentColor; stroke-opacity: 0.45; stroke-width: 1; }
+      .title { font-size: 14px; font-weight: 600; fill: currentColor; }
+      .item { font-size: 11px; fill: currentColor; opacity: 0.75; }
+      .edge { stroke: #B5CC18; stroke-opacity: 0.65; stroke-width: 1.5; fill: none; }
+      .edge-label { font-size: 10px; fill: currentColor; opacity: 0.55; }
+      .chip { fill: rgba(181,204,24,0.10); stroke: #B5CC18; stroke-opacity: 0.45; }
+      .chip-text { font-size: 10px; font-weight: 600; fill: #B5CC18; }
+    `}</style>
+  </defs>
+
+  {/* Browser tier */}
+  <rect className="box" x="40" y="32" width="800" height="120" rx="8" />
+  <rect className="chip" x="56" y="48" width="116" height="22" rx="11" />
+  <text className="chip-text" x="114" y="63" textAnchor="middle">BROWSER · VERCEL</text>
+  <text className="title" x="56" y="92">Frontend (React + Vite) · @quetzal/sdk · MetaMask</text>
+  <text className="item" x="56" y="112">Aztec wallet pool · places sealed orders · claims fills · L1 bridge UI</text>
+  <text className="item" x="56" y="130">quetzaldex.xyz</text>
+
+  {/* Down arrows */}
+  <path className="edge" d="M280 152 L280 220" markerEnd="url(#arr)" />
+  <text className="edge-label" x="290" y="190">HTTPS · reveal + faucet</text>
+  <path className="edge" d="M600 152 L600 220" markerEnd="url(#arr)" />
+  <text className="edge-label" x="610" y="190">JSON-RPC · L2 reads/writes</text>
+
+  {/* Aggregator tier */}
+  <rect className="box" x="40" y="232" width="380" height="180" rx="8" />
+  <rect className="chip" x="56" y="248" width="120" height="22" rx="11" />
+  <text className="chip-text" x="116" y="263" textAnchor="middle">AGGREGATOR · VPS</text>
+  <text className="title" x="56" y="294">aggregator.quetzaldex.xyz</text>
+  <text className="item" x="56" y="316">• Reveal queue (HTTP /reveal ingestion)</text>
+  <text className="item" x="56" y="334">• Clearing daemon (validate → match → bb prove)</text>
+  <text className="item" x="56" y="352">• Bridge relayer (optional, Sub-5c)</text>
+  <text className="item" x="56" y="370">• Faucet (Next.js API · drips fee-juice + tokens)</text>
+  <text className="item" x="56" y="396">faucet.quetzaldex.xyz</text>
+
+  {/* Aztec L2 tier */}
+  <rect className="box" x="460" y="232" width="380" height="180" rx="8" />
+  <rect className="chip" x="476" y="248" width="156" height="22" rx="11" />
+  <text className="chip-text" x="554" y="263" textAnchor="middle">AZTEC NETWORK · TESTNET</text>
+  <text className="title" x="476" y="294">Noir contracts on Aztec L2</text>
+  <text className="item" x="476" y="316">• Orderbook (sealed orders · epoch state)</text>
+  <text className="item" x="476" y="334">• Pools 0/1/2 (V3 concentrated · 16 buckets)</text>
+  <text className="item" x="476" y="352">• Treasury · AggregatorRegistry</text>
+  <text className="item" x="476" y="370">• Token (hybrid: mintable + bridge-claimable)</text>
+  <text className="item" x="476" y="396">node.quetzaldex.xyz</text>
+
+  {/* Aggregator → Aztec (clearing tx) */}
+  <path className="edge" d="M420 322 L460 322" markerEnd="url(#arr)" />
+  <text className="edge-label" x="424" y="312">close_epoch_and_clear_verified</text>
+
+  {/* Aztec ↔ L1 */}
+  <path className="edge" d="M650 412 L650 472" markerEnd="url(#arr)" />
+  <path className="edge" d="M630 472 L630 412" markerEnd="url(#arr)" />
+  <text className="edge-label" x="660" y="446">L1 inbox / L1 outbox · 4-level Merkle</text>
+
+  {/* Ethereum L1 tier */}
+  <rect className="box" x="460" y="484" width="380" height="180" rx="8" />
+  <rect className="chip" x="476" y="500" width="160" height="22" rx="11" />
+  <text className="chip-text" x="556" y="515" textAnchor="middle">ETHEREUM SEPOLIA · L1</text>
+  <text className="title" x="476" y="546">Solidity contracts (Sub-5b/5c)</text>
+  <text className="item" x="476" y="568">• TokenBridge.sol × 3 (USDC · WETH · wBTC)</text>
+  <text className="item" x="476" y="586">• TimelockController × 2 (governance + emergency)</text>
+  <text className="item" x="476" y="604">• 3-of-5 multisig admin</text>
+  <text className="item" x="476" y="622">• EmergencyPauser · UUPS-upgradeable</text>
+  <text className="item" x="476" y="648">L1 RPC via Infura · audit T-13/T-15 pending</text>
+</svg>
+
+For mobile readers: every box is one tier, arrows show direction-of-call. The split between L2 (sealed orders, clearing) and L1 (canonical token escrow) is the privacy backbone — only the per-epoch result crosses the boundary, not individual order details.
+
+Each tier is described below, then [trust assumptions](#trust-assumptions) at the bottom.
+
+## Contracts on Aztec L2
+
+All Noir contracts. Compiled with `aztec.js` 5.0.0.
+
+### Orderbook
+
+- **`Orderbook.nr`** — sealed-order escrow + epoch state machine + Merkle-rooted fills.
+- Storage:
+  - `orders: Owned<PrivateSet<OrderNote>>` — per-user sealed orders
+  - `current_epoch: PublicMutable<EpochState>` — public epoch counter
+  - `fills_root: Map<u32, Field>` — per-epoch settlement Merkle root
+  - `treasury: PublicMutable<AztecAddress>` — Sub-5a one-shot setter for the Treasury
+  - `pool_registry: PublicMutable<[AztecAddress; 8]>` — Sub-5a mutable pool list (MAX_NUM_POOLS = 8)
+- Externals: `submit_order`, `cancel_order`, `close_epoch`, `close_epoch_and_clear_verified`, `claim_fill`
+- `close_epoch_and_clear_verified` does a `std::verify_proof_with_type` recursive verify of the clearing-circuit ClientIVC proof + writes `fills_root[epoch_id]` if valid + calls `Treasury.pay_aggregator(winner, fee)`.
+
+### Pools
+
+- **`LiquidityPool.nr`** (3 instances deployed for the testnet triangle).
+- Concentrated-liquidity buckets (16 per pool, 1.5× geometric spacing).
+- `deposit` / `withdraw` are private (hint-and-validate pattern).
+- `apply_clearing(swap)` is called only by the Orderbook contract; iterates a `BucketDelta[4]` sparse encoding.
+
+### Treasury
+
+- Holds tUSDC fee pool. `pay_aggregator(winner, fee)` is `only_orderbook` + silent-partial-pay.
+
+### AggregatorRegistry
+
+- Bond escrow + endpoint discovery.
+- Stores `(id, bonded_amount, endpoint_hash, addr)` keyed by `AztecAddress`.
+- `view_bonded_amount(addr)` is a `#[view]` so the Orderbook can read it via `self.view(Contract::at(addr).fn())` during a clearing.
+
+### Token (bridge-mode)
+
+- Generic Aztec `Token` contract vendored from `defi-wonderland/aztec-standards@v4.2.0`.
+- In bridge mode (`is_bridged: PublicImmutable<bool> = true`) the legacy `mint_to_*` paths revert; only `claim_public`, `claim_private`, `exit_to_l1_public`, `exit_to_l1_private` work.
+- In non-bridge mode (used by tUSDC + tETH + tBTC test tokens) `mint_to_private` + `mint_to_public` work as normal; the faucet uses these.
+
+## Aggregator (off-chain)
+
+Lives at `https://aggregator.quetzaldex.xyz`. The MVP runs a single instance; the design supports a bonded race of multiple registered aggregators.
+
+- **Reveal queue** — `POST /reveal` accepts a `RevealPayload` (epoch_id, order_nonce, side, amount_in, limit_price, submitted_at_block, owner, submission_tx_hash). Deduplicates by `(epoch_id, order_nonce)`.
+- **Validation** — replays the on-chain `order_acc` Poseidon2 hash chain. Tampered reveals are silently dropped.
+- **Clearing daemon** — polls `Orderbook.get_epoch()`; when `block >= closes_at_block` + the queue contains matching reveals for that epoch, runs:
+  1. `selectBatch` → FIFO 128-order cut
+  2. `findClearingPrice` → bisects uniform `P*`
+  3. `simulateNet` → routes the imbalance through the pool's buckets
+  4. `buildClearingWitnessMultiPair` → witness for the Noir clearing circuit
+  5. `runNargoExecute` + `runBbProve` → ClientIVC proof
+  6. `submitClearing` → calls `close_epoch_and_clear_verified` on the orderbook
+- **Bridge relayer** *(optional, opt-in via `RELAYER_MODE=1`)* — extends the daemon to relay `exit_to_l1` outbox proofs for users who don't want to construct sibling paths themselves; paid via the Treasury fee economy + a per-exit relayer fee.
+
+The aggregator does *not* keep any user secrets. It sees plaintext reveals during clearing (because that's the point of the reveal — to let the clearing circuit work on plaintext inputs), but it doesn't see anything private after the clearing is on chain. The Merkle `fills_root` published on chain is the only way anyone, including the aggregator, learns who got which fill.
+
+See `aggregator/ops/RUNBOOK-aggregator.md` for the production runbook.
+
+## Bridge (L1)
+
+- **`TokenBridge.sol`** (UUPS + AccessControl + Pausable) — one instance per asset (USDC, WETH, wBTC).
+- **TimelockController × 2** — one 7-day for `GOVERNANCE_ROLE`, one 0-day for `EMERGENCY_PAUSER_ROLE`. The role admin for the pauser role is *the role itself*, so governance cannot revoke it without acquiring the role + a 7-day window.
+- **Multisig × 1** — 3-of-5 Safe (or equivalent) at the top of the governance timelock.
+- See [Bridge](/bridge) for the user flow.
+
+## Faucet
+
+- **Next.js Pages API** at `https://faucet.quetzaldex.xyz`
+- Endpoints: `POST /api/drip` (CORS + zod + IP-based rate limit + L1 bridge + L2 mint), `GET /api/health`, `GET /api/metrics` (Prometheus exposition format)
+- Operator's L1 hot wallet pays Sepolia ETH for the fee-juice bridge; operator's L2 admin wallet mints tUSDC + tETH directly.
+- Rate limit: 4 per IP per 8 hours (sliding window).
+
+## Frontend
+
+- **React + Vite** at [quetzaldex.xyz](https://quetzaldex.xyz).
+- Screens: Landing (onboarding wizard), Trade, Liquidity, Bridge (deposit/claim/exit tabs), Wallet/History/Settings.
+- Uses `@quetzal/sdk` (this repo) + `viem` + `wagmi` (for L1 bridge MetaMask).
+- Aztec design tokens: chartreuse (`#D4FF28`) primary accent, ink (`#1A1400`) ground, parchment (`#F2EEE1`) background.
+
+## What's audited <a id="whats-audited" />
+
+- ✅ L1 contracts (`contracts-l1/`) have a Slither report at `contracts-l1/audit/slither-2026-05-23.txt` + an audit snapshot tag `sub5c-audit-snapshot`. **External audit is still pending.**
+- ✅ L2 contracts + clearing circuit — TXE tested, bb-prove verified, and as of v0.1.0 **validated with live on-chain settlements** including the first multi-pool clearing (3 pools / 3 fills / 1 proof, 2026-06-10) and adversarial acceptance (fabricated state, wrong pool id, mismatched flows all revert with exact messages). No external audit yet.
+- ✅ Aggregator (TypeScript) — 115 unit tests; live-hardened (anchor-drift self-heal, fee gates, race guards — see [`docs/mainnet-lessons.md`](https://github.com/Kubudak90/quetzal/blob/main/docs/mainnet-lessons.md)). No external audit.
+
+See `contracts-l1/AUDIT.md` for the threat model + T-XX item list.
+
+## Trust assumptions <a id="trust-assumptions" />
+
+| Tier | Trust | Mitigation |
+|---|---|---|
+| Aztec sequencer | Liveness only (no value at risk) | Permissionless clearing-aggregator race; users can self-bond + clear if no one else does |
+| Clearing aggregator (off-chain) | Reveals plaintext orders to whichever aggregator wins the race | Sub-6d threshold T-of-N or rotating-aggregator commitments (future) |
+| Aztec Labs L1 RPC | Liveness | Mitigated: reads/writes go through the self-hosted proxy `node.quetzaldex.xyz` |
+| L1 bridge multisig | 3-of-5 governance multisig can upgrade `TokenBridge.sol` (UUPS) | 7-day timelock + on-chain visibility |
+| L1 bridge emergency pauser | Separate multisig with 0-day timelock for `pause()` only | Self-admin invariant: governance cannot revoke pauser without first acquiring the role |
+| Faucet operator | Sees IP + L2 address mapping (rate limit + audit log) | No personal data collected beyond IP; logs rotate per Sub-7a runbook |
+| Frontend (Vercel) | Static React bundle; XSS would let an attacker rewrite calldata | Subresource integrity not yet enforced; CSP is permissive; **don't trade real value on testnet** |
+
+## Known carry-forward audit items <a id="audit-items" />
+
+From `contracts-l1/AUDIT.md`:
+
+- **T-13** — deposit ↔ claim temporal linkage (statistical privacy leak across bridge boundary)
+- **T-15** — escrow-side direction leak via `Token.transfer_private_to_public`
+- **T-16** — *closed* (path-order leak — Sub-6c canonical path)
+- **T-17** — *accepted limitation* (wallet-pool exhaustion under degraded sequencer)
+
+Plus 7 documented limitations on the Sub-4 multi-pair circuit (see [Multi-pair routing](/trading/multi-hop#whats-currently-limited-carry-forward)).
+
+## Changelog <a id="changelog" />
+
+The project ships in **sub-projects**, each one ~2 weeks of work. Headline sub-projects:
+
+| Sub | Date | Output | Reference |
+|---|---|---|---|
+| 1 | 2026-05-22 | Trustless clearing via ZK proof + Merkle settlement root | `project_subproject1_complete` |
+| 2 | 2026-05-22 | Concentrated liquidity LP-side | `project_subproject2_complete` |
+| 2.5 | 2026-05-22 | LP-side circuit integration | `project_subproject2-5_complete` |
+| 3 | 2026-05-22 | Permissionless aggregator + bonded race + Treasury fee | `project_subproject3_complete` |
+| 4 | 2026-05-23 | Multi-pair routing + 2-hop paths | `project_subproject4_complete` |
+| 5a | 2026-05-23 | Deterministic addresses + Sub-4 carryforwards | `project_subproject5a_complete` |
+| 5b | 2026-05-23 | L1↔L2 bridge USDC + WETH | `project_subproject5b_complete` |
+| 5c | 2026-05-23 | Production infra: pauser, outbox proofs, monitoring | `project_subproject5c_complete` |
+| 6a | 2026-05-25 | K-decoy anonymity set | `project_subproject6a_complete` |
+| 6c | 2026-05-27 | Canonical path assertion + WalletPool | `project_subproject6c_complete` |
+| 7a | 2026-05-27 | Faucet | `project_subproject7a_complete` |
+| 7b | 2026-05-28 | Browser onboarding wizard | `project_subproject7b_complete` |
+| 7c | 2026-05-28 | Bridge UI | `project_subproject7c_complete` |
+| 8 | 2026-05-28 | Public DEX alpha (frontend + faucet + aggregator live) | `project_sub8_public_dex_alpha` |
+| 9 | 2026-05-28 | Clean-slate testnet redeploy (3 pools) | `project_sub9_clean_slate_redeploy` |
+| 9.4 | 2026-05-29 | EPOCH_LENGTH = 10 redeploy (UX: 75 min → 8–15 min) | `project_sub94_epoch10_redeploy` |
+| 9.8 | 2026-05-29 | This documentation site | — |
+
+For commit-level detail follow the [GitHub repo](https://github.com/Kubudak90/quetzal/commits/main).

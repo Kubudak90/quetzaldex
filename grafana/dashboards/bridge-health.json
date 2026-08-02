@@ -1,0 +1,35 @@
+{
+  "title": "Quetzal Bridge Health",
+  "uid": "quetzal-bridge-health",
+  "tags": ["quetzal", "bridge"],
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Total Locked (USDC)",
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "quetzal_bridge_total_locked{token=\"USDC\"}", "refId": "A"}]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Total Locked (WETH)",
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "quetzal_bridge_total_locked{token=\"WETH\"}", "refId": "A"}]
+    },
+    {
+      "id": 3, "type": "stat", "title": "Total Locked (wBTC)",
+      "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "quetzal_bridge_total_locked{token=\"wBTC\"}", "refId": "A"}]
+    },
+    {
+      "id": 4, "type": "stat", "title": "Any Portal Paused?",
+      "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "max(quetzal_bridge_paused)", "refId": "A"}]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "TVL Utilization Over Time",
+      "gridPos": {"x": 0, "y": 4, "w": 24, "h": 8},
+      "targets": [{"expr": "quetzal_bridge_tvl_utilization", "refId": "A", "legendFormat": "{{ token }}"}]
+    }
+  ]
+}

@@ -1,0 +1,225 @@
+---
+title: SDK reference
+---
+
+import { Callout } from 'nextra/components';
+
+# `@quetzal/sdk`
+
+The Quetzal TypeScript SDK is the supported way to interact with the protocol programmatically. The frontend uses it. The CLI uses it. Bots, indexers, and integrations should use it.
+
+It exposes a single top-level class `QuetzalClient` with namespaced sub-APIs for orders, pools, bridge, reads, and aggregator endpoint management.
+
+## Install
+
+```bash
+pnpm add @quetzal/sdk
+# or
+npm install @quetzal/sdk
+```
+
+The SDK pulls `@aztec/aztec.js@5.0.0` as a peer dependency. If you also use `viem` (for L1 bridge calls), version `^2.21` is the tested baseline.
+
+<Callout type="info">
+  The SDK is published from `sdk/` in the main repo. Until a stable npm release, install via the `Kubudak90/quetzal` git URL or copy the package locally during development.
+</Callout>
+
+## Quickstart — place a sealed order
+
+```ts
+import { QuetzalClient } from '@quetzal/sdk';
+import quetzalConfig from './quetzal.config.json';
+
+const client = await QuetzalClient.connect({
+  network: 'alpha-testnet',
+  nodeUrl: 'https://node.quetzaldex.xyz',
+  account: {
+    type: 'schnorr',
+    secret: process.env.AZTEC_SECRET!, // 32-byte hex
+  },
+  contracts: quetzalConfig, // from your testnet deploy
+});
+
+console.log('connected as', client.address.toString());
+
+const result = await client.orders.placeOrder({
+  side: 'buy',
+  amount: 100_000_000n,           // 100 tUSDC (6-dec)
+  limitPrice: 1_500_000_000_000_000_000n, // 1.5 tETH/tUSDC, 18-dec fixed
+  path: ['tUSDC', 'tETH'],
+});
+
+console.log('order placed', result);
+// { orderNonce: '0x...', txHash: '0x...', blockNumber: 12345, epochId: 47 }
+```
+
+## Connecting
+
+`QuetzalClient.connect()` accepts a discriminated `account` union covering four wallet shapes:
+
+```ts
+type AccountSpec =
+  | { type: 'schnorr'; secret: string; salt?: string; signingKey?: string;
+      proverEnabled?: boolean; dataDirectory?: string }
+  | { type: 'test-account'; accountIndex: number }
+  | { type: 'external-pxe'; wallet: Wallet; address: AztecAddress }
+  | { type: 'aztec-wallet'; provider: AztecBrowserProvider };
+```
+
+- `schnorr` — ephemeral embedded PXE, derives keys from a hex secret. Best for server-side scripts.
+- `test-account` — pre-funded local-network test accounts; CLI + integration tests only.
+- `external-pxe` — you've already built your own wallet + PXE; the SDK reuses them.
+- `aztec-wallet` — browser extension (`window.aztec` RPC provider). Frontend default.
+
+For batch / throughput-oriented use, prefer the [wallet pool](/getting-started/wallet):
+
+```ts
+import { WalletPool } from '@quetzal/sdk';
+
+const pool = await WalletPool.fromMaster({
+  masterSecret: process.env.MASTER_SECRET!,
+  n: 5,
+  network: 'alpha-testnet',
+});
+
+const client = pool.next(); // round-robin
+```
+
+## Orders API
+
+```ts
+client.orders.placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResult>;
+client.orders.placeOrderBulk(input: BulkPlaceOrderInput): Promise<BulkPlaceOrderResult>;
+client.orders.claimFill(opts: {
+  nonce: bigint;            // the order nonce, as a bigint (not a hex string)
+  epoch?: number;           // omit to let the aggregator locate the epoch
+  aggregatorUrl?: string;   // defaults to same-origin '/api'; set it outside the app
+  hopIndex?: number;
+  filterDecoys?: boolean;
+  proof?: HopProofResponse; // supply to skip the /proof fetch
+}): Promise<{ txHash: string; txHashes: string[]; claimedHops: number; skipped?: boolean; reason?: string }>;
+client.orders.cancelOrder({ nonce }: { nonce: bigint }): Promise<CancelResult>;
+```
+
+Input types:
+
+```ts
+type OrderSide = 'buy' | 'sell';
+
+interface PlaceOrderInput {
+  side: OrderSide;
+  amount: bigint;          // in base units (6 dec for tUSDC, 18 for tETH, 8 for tBTC)
+  limitPrice: bigint;      // 18-dec fixed-point
+  path: string[];          // 2-3 entries; alias OR hex address; auto-canonicalized
+}
+
+interface BulkPlaceOrderInput extends PlaceOrderInput {
+  decoyCount: number;      // 0..4 — sub-6a anonymity-set decoys
+}
+```
+
+The SDK auto-canonicalizes the path (asserts `path[0] < path[last]` u128-truncated) and flips `side` if needed. You can pass tokens in any order.
+
+For a bulk submit:
+
+```ts
+await client.orders.placeOrderBulk({
+  side: 'buy',
+  amount: 1_000_000n,
+  limitPrice: 1_500_000_000_000_000_000n,
+  path: ['tUSDC', 'tETH'],
+  decoyCount: 4, // 1 real + 4 decoys, indistinguishable on-chain
+});
+```
+
+Real and decoy orders share a single tx; decoys carry zero-value amounts but valid Poseidon-chained accumulators so the aggregator can't distinguish them without a reveal. After clearing, real reveals match; decoy reveals are sent and silently discarded.
+
+## Pools API
+
+```ts
+client.pools.getPoolState(poolAddress): Promise<PoolState>;
+client.pools.getBucket(poolAddress, bucketId): Promise<BucketState>;
+client.pools.getPositions(): Promise<PositionView[]>;
+client.pools.estimateDeposit(input): Promise<DepositEstimate>;
+client.pools.deposit(input): Promise<DepositResult>;
+client.pools.withdraw(input): Promise<WithdrawResult>;
+```
+
+See [LP](/lp) for the bucket model + regimes.
+
+## Bridge API
+
+```ts
+client.bridge.deposit(input, l1Wallet): Promise<BridgeDepositResult>;
+client.bridge.getMessageReady(messageHash): Promise<boolean>;
+client.bridge.claim(input): Promise<ClaimResult>;
+client.bridge.exit(input): Promise<ExitResult>;
+client.bridge.prepareL1Withdraw(input): Promise<PrepareL1WithdrawResult>;
+```
+
+`deposit` needs a `viem` `WalletClient` for the L1 call. The other four are L2-side.
+
+See [Bridge](/bridge) for the full deposit + claim + exit + withdraw flow.
+
+## Reads API
+
+Read-only queries that go through `simulate()` against PXE:
+
+```ts
+client.reads.getCurrentEpoch(): Promise<CurrentEpoch>;
+client.reads.getOrders(owner): Promise<OrderViewModel[]>;
+client.reads.getPool(poolAddress): Promise<PoolViewModel>;
+client.reads.getPositions(owner): Promise<PositionViewModel[]>;
+```
+
+<Callout type="warning">
+  As of Sub-9.6, the embedded wallet (`@aztec/wallets/embedded`) does not expose `executeUtility`. Some reads currently route around it via the wallet-sdk wrapper. If you call `client.reads.getCurrentEpoch()` from a server script using a raw `EmbeddedWallet`, you may hit `wallet.executeUtility is not a function`. Workaround: instantiate via `pool.next()` or use the wallet-sdk path. The fix is in the SDK pipeline; see `project_sub8_public_dex_alpha` for context.
+</Callout>
+
+## Aggregator API
+
+For registering as an aggregator + broadcasting reveals:
+
+```ts
+client.aggregator.register(input): Promise<RegisterResult>;
+client.aggregator.list(): Promise<AggregatorEntry[]>;
+client.aggregator.unregister(): Promise<void>;
+client.aggregator.broadcastReveal(payload, registryUrl?): Promise<void>;
+client.aggregator.directReveal(payload, aggregatorUrl): Promise<void>; // Sub-8.5 bypass
+```
+
+`broadcastReveal` looks up registered aggregators in the on-chain registry + fans out the reveal to each registered endpoint. `directReveal` skips the registry and posts to one hardcoded URL — used by the public frontend's `VITE_AGGREGATOR_URL` while the registry is still single-aggregator.
+
+## Wallet adapters
+
+For custom wallet integrations:
+
+```ts
+import {
+  WalletAdapter,
+  SchnorrSecretAdapter,
+  ExternalPxeAdapter,
+  AztecWalletAdapter,
+  TestAccountAdapter,
+} from '@quetzal/sdk';
+```
+
+Implement `WalletAdapter` if you have a wallet that doesn't fit the four built-ins (e.g. a hardware-backed signer).
+
+## Errors
+
+```ts
+import { QuetzalError, OrderError, BridgeError, ConfigError } from '@quetzal/sdk';
+```
+
+All SDK errors extend `QuetzalError` with a `code` field. The most common:
+
+- `OrderError("INVALID_PATH", "...")` — path length, alias unknown, endpoints equal under u128 truncation
+- `BridgeError("UNKNOWN_TOKEN", "...")` — token alias not registered
+- `ConfigError("MISSING_ENV", "...")` — connect() called without required network/nodeUrl
+
+## Reference
+
+- Source: [sdk/src/](https://github.com/Kubudak90/quetzal/tree/main/sdk/src)
+- Public exports: [sdk/src/index.ts](https://github.com/Kubudak90/quetzal/blob/main/sdk/src/index.ts)
+- Test suite: 98+ unit tests under `sdk/src/*.test.ts`

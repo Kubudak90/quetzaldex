@@ -1,0 +1,12 @@
+[package]
+name = "orderbook"
+type = "contract"
+authors = [""]
+compiler_version = ">=1.0.0"
+
+[dependencies]
+aztec = { git = "https://github.com/AztecProtocol/aztec-packages", tag = "v5.0.0", directory = "noir-projects/aztec-nr/aztec" }
+token = { path = "../token" }
+pool = { path = "../pool" }
+aggregator_registry = { path = "../aggregator-registry" }
+treasury = { path = "../treasury" }

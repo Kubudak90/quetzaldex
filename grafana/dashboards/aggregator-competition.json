@@ -1,0 +1,15 @@
+{
+  "title": "Quetzal Aggregator Competition",
+  "uid": "quetzal-aggregator-comp",
+  "tags": ["quetzal", "aggregator"],
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "60s",
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "Aggregator Registry Size (24h)",
+      "gridPos": {"x": 0, "y": 0, "w": 24, "h": 8},
+      "targets": [{"expr": "quetzal_l2_aggregator_registry_size", "refId": "A"}]
+    }
+  ]
+}

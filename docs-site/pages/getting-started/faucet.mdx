@@ -1,0 +1,101 @@
+---
+title: Get test tokens
+---
+
+import { Callout } from 'nextra/components';
+
+# Get test tokens
+
+The easiest way: open **[faucet.quetzaldex.xyz](https://faucet.quetzaldex.xyz)** — a public drip page with live faucet status. Enter your Aztec address, pass the (invisible) reCAPTCHA, and one request drips three assets:
+
+| Asset | Amount | What it is |
+|---|---|---|
+| Fee-juice | 50 | Aztec's native gas asset (bridged L1 → L2 as a claim) |
+| tUSDC | 1,000 | Quetzal's test stablecoin (minted on L2) |
+| tETH | 0.5 | Quetzal's test ETH (minted on L2) |
+
+(Amounts are operator configuration — the page always shows the current values, served from `/api/config`.)
+
+The faucet is not a token contract. It is a small service that:
+
+1. Deposits fee-juice from a hot L1 account into the Aztec portal for your address (you receive a **claim**, see below).
+2. Mints tUSDC + tETH directly to your L2 address in one batched transaction.
+
+A single request takes 2–4 minutes end-to-end. Most of that is proof generation and waiting for the L1 inbox.
+
+## Fee juice arrives as a claim
+
+Tokens land in your balance immediately. **Fee juice does not** — it arrives as an L1→L2 claim that your wallet must redeem:
+
+- **Onboarding through the app**: the wizard claims it automatically (the claim itself pays the fee, so a zero-balance wallet works). You don't need to do anything.
+- **CLI / SDK users**: the faucet page gives you a downloadable **claim package** (`claimAmount`, `claimSecretHex`, `messageLeafIndex`, …). Redeem it with `FeeJuicePaymentMethodWithClaim` on your first transaction.
+
+## Calling the API directly
+
+<Callout type="info">
+  Since 2026-06-10 the drip endpoint is protected by **reCAPTCHA v3** — a bare
+  `curl` POST without a captcha token is rejected (`"invalid captcha"`). There
+  is deliberately no bypass key. To fund CLI accounts, use the page and copy
+  the claim package, or run your own faucet instance with
+  `FAUCET_REQUIRE_CAPTCHA=false` (see `faucet/README.md` in the repo).
+</Callout>
+
+Successful drips (via the page) return the mint tx hash and the fee-juice claim data:
+
+```json
+{
+  "success": true,
+  "claimData": {
+    "claimAmount": "50000000000000000000",
+    "claimSecretHex": "0x…",
+    "messageLeafIndex": "…",
+    "l1TxHash": "0x…"
+  },
+  "tUSDCMint": { "txHash": "0x…", "amount": "1000000000" },
+  "tETHMint":  { "txHash": "0x…", "amount": "500000000000000000" }
+}
+```
+
+Failures return `{ "success": false, "error": "...", "code": "bad-request" | "rate-limited" | "drained" | "transient" }`.
+
+## Rate limits
+
+Three independent layers:
+
+| Layer | Limit |
+|---|---|
+| Per IP (application) | **4 drips per 8 hours** (sliding window) |
+| Per IP (edge) | 6 drip POSTs per hour |
+| Global | **100 drips per day** across all users |
+
+The page's status strip shows how many drips remain today.
+
+## Health endpoint
+
+Anyone can check the faucet's liveness + operator balances:
+
+```bash
+curl -s https://faucet.quetzaldex.xyz/api/health
+```
+
+`status: "degraded"` means an operator stock or upstream dependency is unhealthy and the faucet will reject new drips until it recovers.
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `invalid captcha` | Direct API call without a token, or blocked reCAPTCHA script | Use the page; disable adblock for it. |
+| `rate-limited` (429) | More than 4 drips from this IP in 8h | The page shows a retry countdown. |
+| `drained` | Daily global cap reached or operator stock low | Try again later. |
+| `transient` | Upstream node hiccup | Safe to retry in a minute. |
+| Page says request timed out | The pipeline takes 2–4 min; your network dropped mid-wait | **The drip may still have landed** — check your balance before retrying. |
+| Drip succeeds but balance never shows | PXE note-sync lag on your wallet | Give it a few minutes or restart the wizard. |
+
+<Callout type="warning">
+  **The faucet is shared infrastructure.** Don't script bulk drips. The operator is paying real Sepolia ETH and fee-juice for every request; abusing the endpoint degrades the testnet for everyone.
+</Callout>
+
+## Where to file bugs
+
+- Faucet issues: [github.com/Kubudak90/quetzal/issues](https://github.com/Kubudak90/quetzal/issues) with `[faucet]` in the title.
+- Wizard / onboarding issues: same repo, label `[onboarding]`.

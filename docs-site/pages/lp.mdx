@@ -1,0 +1,136 @@
+---
+title: Liquidity provision
+---
+
+import { Callout } from 'nextra/components';
+
+# Liquidity provision
+
+Quetzal's pools are **concentrated-liquidity AMMs** (Uniswap V3-style) with **private LP positions**. Aggregate reserves per bucket are public; your share in those buckets is a private note.
+
+## The bucket model
+
+Each pool's full price range is divided into **16 fixed buckets** with **geometric 1.5× spacing** from a global `p_min_sqrt` floor:
+
+- Bucket `i` covers the sqrt-price range `[p_min_sqrt × 1.5^i, p_min_sqrt × 1.5^(i+1))`.
+- Buckets are indexed `0..15`; the testnet seed-LP script seeds into bucket `8` by default (mid-range of the geometric ladder).
+
+Pool-level public state (`PoolState`):
+
+```
+PoolState {
+  reserve_a: u128,
+  reserve_b: u128,
+  current_sqrt_price: u128,
+}
+```
+
+Per-bucket public state (`BucketState`):
+
+```
+BucketState {
+  reserve_a: u128,
+  reserve_b: u128,
+  liquidity: u128,
+  cum_fee_a_per_share: u128,    // MasterChef counter, scaled 1e18
+  cum_fee_b_per_share: u128,
+}
+```
+
+Your position (`PositionNote`, private):
+
+```
+PositionNote {
+  bucket_id: u32,                          // private!
+  lp_share: u128,
+  cum_fee_a_per_share_at_deposit: u128,    // for fee accrual delta
+  cum_fee_b_per_share_at_deposit: u128,
+  nonce: Field,
+  owner: AztecAddress,
+}
+```
+
+## Deposit regimes
+
+Which token(s) you actually deposit depends on the pool's `current_sqrt_price` vs. the bucket you choose:
+
+| Regime | Condition | What you deposit |
+|---|---|---|
+| **InRange** | bucket contains `current_sqrt_price` | Both `token_a` + `token_b`, in the bucket's exact ratio |
+| **BelowRange** | bucket sits below `current_sqrt_price` | `token_b` only (the high-value side) |
+| **AboveRange** | bucket sits above `current_sqrt_price` | `token_a` only (the low-value side) |
+
+The SDK exposes `depositRegime(pool, bucket)` to detect this before you call.
+
+For the testnet's seeded pool 0, the pool is initialized at `current_sqrt_price = p_min_sqrt` (a "fresh pool" regime), so bucket 8 is currently **AboveRange** and only consumes `token_a` (tUSDC) on deposit.
+
+## Calling deposit
+
+```ts
+import { QuetzalClient } from '@quetzal/sdk';
+
+const client = await QuetzalClient.connect({ /* ... */ });
+
+// Estimate first — figures out which regime + which token(s) to allocate
+const estimate = await client.pools.estimateDeposit({
+  poolAddress: '0x0cd94fcc...4949a0',
+  bucketId: 8,
+  amountA: 1_000_000_000n, // 1,000 tUSDC
+});
+
+console.log(estimate);
+// { regime: 'AboveRange', usedA: 1_000_000_000n, usedB: 0n, lpShare: ... }
+
+// Commit
+const result = await client.pools.deposit({
+  poolAddress: '0x0cd94fcc...4949a0',
+  bucketId: 8,
+  amountA: estimate.usedA,
+  amountB: estimate.usedB,
+});
+
+// result.positionNonce — save this; you need it to withdraw
+```
+
+The pool uses the **hint-and-validate pattern**: a private function cannot read `PublicMutable`, so the SDK passes `hint_pool` + `hint_bucket` (the live public state at call time) into the private deposit. The private fn computes on those hints; a public `_apply_deposit` callback then asserts `actual == hint` before mutating. If two LPs race the same bucket, the second one's hint goes stale and the call reverts — the SDK retries with a fresh hint.
+
+## Withdrawing + fee accrual
+
+```ts
+await client.pools.withdraw({
+  poolAddress: '0x0cd94fcc...4949a0',
+  positionNonce: '0x...',
+});
+```
+
+The withdraw:
+
+1. Pops the `PositionNote` from your private set (nullifying it).
+2. Reads the bucket's *current* `cum_fee_*_per_share`.
+3. Subtracts `cum_fee_*_per_share_at_deposit` (recorded at deposit time) → `fee_share`.
+4. Multiplies by your `lp_share` → fees accrued.
+5. Returns principal + fees to your private balance.
+
+Fees come from the **0.3% swap fee** on every clearing-driven swap. The fee is withheld from reserves (MasterChef counter), so per-bucket constant product can only *shrink* by floor dust per clearing, never grow.
+
+<Callout type="info">
+  Each deposit creates a **separate** `PositionNote`. If you deposit twice into the same bucket, you have two positions and must call withdraw twice. The SDK's `client.pools.getPositions()` enumerates all of them, decoded with bucket + in-range badge.
+</Callout>
+
+## What's currently dormant
+
+Per [project_subproject2_complete.md](https://github.com/Kubudak90/quetzal/tree/main/docs):
+
+- **LP-side is fully shipped.** Deposit / withdraw / position view all work standalone, with 21 Noir TXE tests + 71 JS aggregator tests passing the V3 math three-way (`circuits/clearing/src/buckets.nr` + `contracts/pool/src/buckets.nr` + `aggregator/src/buckets.ts`).
+- **End-to-end clearing through buckets is shipped + provable** since Sub-2.5 (witness builder + circuit shape 42 fields, bb prove confirmed, gate count 107,762).
+- **Multi-bucket V3 swap-step exact math** is implemented in `aggregator/src/buckets.ts::traceBucketSwap` (UP + DOWN + empty-bucket skip, MAX_BUCKET_HOPS=4, last-bucket-residual fee).
+- **Per-bucket constant-product assertions in the circuit** are present (Sub-2.5 Phase B).
+- **The aggregator's clearing watcher (`close_epoch_and_clear_verified`) runs in production** against a self-hosted node. Epochs clear on testnet and LP fees accrue from real clearings, not just unit tests.
+
+## Reference
+
+- Pool contract: `contracts/pool/src/main.nr`
+- Bucket math (three places, parity-tested): `circuits/clearing/src/buckets.nr`, `contracts/pool/src/buckets.nr`, `aggregator/src/buckets.ts`
+- SDK API: `client.pools.{getPoolState, getBucket, getPositions, deposit, withdraw, estimateDeposit}`
+- CLI: `quetzal deposit --bucket <id> [--auto-b]`, `quetzal withdraw --bucket <id>`, `quetzal positions`
+- LP seed script (operator-side): `scripts/seed-lp.ts`

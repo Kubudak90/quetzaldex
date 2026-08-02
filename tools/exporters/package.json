@@ -1,0 +1,21 @@
+{
+  "name": "@quetzal/exporters",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "l1": "tsx src/l1-exporter.ts",
+    "l2": "tsx src/l2-exporter.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aztec/aztec.js": "5.0.0",
+    "prom-client": "^15.1.0",
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.0"
+  }
+}

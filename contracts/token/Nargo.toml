@@ -1,0 +1,15 @@
+[package]
+name = "token"
+type = "contract"
+authors = [""]
+compiler_version = ">=1.0.0"
+
+[dependencies]
+aztec = { git = "https://github.com/AztecProtocol/aztec-packages", tag = "v5.0.0", directory = "noir-projects/aztec-nr/aztec" }
+uint_note = { git = "https://github.com/AztecProtocol/aztec-packages", tag = "v5.0.0", directory = "noir-projects/aztec-nr/uint-note" }
+balance_set = { git = "https://github.com/AztecProtocol/aztec-packages", tag = "v5.0.0", directory = "noir-projects/aztec-nr/balance-set" }
+compressed_string = { git = "https://github.com/AztecProtocol/aztec-packages", tag = "v5.0.0", directory = "noir-projects/aztec-nr/compressed-string" }
+# M19: sha256::digest is needed by the crate-root deposit_content/withdraw_content helpers.
+# The pub use protocol_types as protocol alias in aztec is not traversable from this crate's root,
+# so we pull sha256 directly (same version aztec uses; already in the nargo cache).
+sha256 = { tag = "v0.3.0", git = "https://github.com/noir-lang/sha256" }

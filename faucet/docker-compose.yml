@@ -1,0 +1,46 @@
+# Sub-7a faucet — docker-compose for VPS deployment.
+#
+# Usage from /repo/faucet:
+#   docker compose build      # build the image (context = ..)
+#   docker compose up -d      # start in background
+#   docker compose logs -f    # tail
+#   docker compose down       # stop + remove
+#
+# Operator prerequisites:
+#   - .env.faucet exists in this directory (copy .env.faucet.example and fill in)
+#   - ./data directory writable by the container (SQLite + audit log persist here)
+#   - pnpm compile && pnpm codegen ran at the repo root (see Dockerfile assertion)
+services:
+  faucet:
+    build:
+      # Build context is the monorepo root so the Dockerfile can COPY
+      # contracts/, sdk/, tests/, etc. The Dockerfile lives one level down.
+      context: ..
+      dockerfile: faucet/Dockerfile
+    image: quetzal-faucet:latest
+    container_name: quetzal-faucet
+    restart: unless-stopped
+    # .env.faucet contains:
+    #   - L1 RPC URL + bridge address + faucet treasury private key
+    #   - L2 PXE URL + faucet wallet secret + Token contract address
+    #   - HCAPTCHA_SECRET, rate-limit caps, etc.
+    # See .env.faucet.example for the full schema.
+    env_file: .env.faucet
+    ports:
+      # 3030 host -> 3030 container (matches `next start -p 3030`).
+      - "3030:3030"
+    volumes:
+      # SQLite rate-limit DB + JSONL audit log persist across container
+      # restarts. Bind-mount so the operator can `tail -f data/audit.log` from
+      # the host and back up `data/` with standard fs tools.
+      - ./data:/repo/faucet/data
+    healthcheck:
+      # /api/health checks: L1 RPC reachable, L2 PXE reachable, treasury wallet
+      # has gas + token balance, SQLite writable. Returns 200 only when all OK.
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:3030/api/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      # Give the container a generous window on first boot — PXE bootstrap
+      # alone can take ~30s on a cold VPS.
+      start_period: 60s

@@ -1,0 +1,38 @@
+groups:
+  - name: quetzal-bridge
+    rules:
+      - alert: BridgePaused
+        expr: quetzal_bridge_paused > 0
+        for: 1m
+        labels:
+          severity: page
+        annotations:
+          summary: "Quetzal bridge paused — emergency intervention required"
+          description: "Bridge for token {{ $labels.token }} has been paused for more than 1 minute. Investigate immediately."
+
+      - alert: BridgeTvlNearCap
+        expr: quetzal_bridge_tvl_utilization > 0.9
+        for: 5m
+        labels:
+          severity: warn
+        annotations:
+          summary: "Quetzal bridge {{ $labels.token }} TVL above 90% of cap"
+          description: "Utilization {{ $value }}. Operator may need to raise cap (governance timelock) before deposits fail."
+
+      - alert: OrderbookStalled
+        expr: time() - quetzal_l2_orderbook_last_clearing_timestamp > 3600
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: "Quetzal orderbook has not had a clearing in >1 hour"
+          description: "Likely aggregator daemon down or stuck. Check aggregator health + restart if needed."
+
+      - alert: OutboxBacklog
+        expr: quetzal_bridge_outbox_unconsumed_messages > 50
+        for: 30m
+        labels:
+          severity: warn
+        annotations:
+          summary: "L2→L1 Outbox backlog above 50 unconsumed messages"
+          description: "Makers may be unable to withdraw. Check relayer daemon + L1 RPC health."

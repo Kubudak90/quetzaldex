@@ -1,0 +1,82 @@
+.page {
+  min-height: 100vh;
+  background: #F2EEE1;
+  color: #1A1400;
+  font-family: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 16px;
+}
+.card {
+  width: 100%;
+  max-width: 560px;
+  background: #fff;
+  border: 1px solid #1A140022;
+  border-radius: 12px;
+  padding: 28px;
+  margin-top: 20px;
+}
+.title { font-size: 28px; font-weight: 700; margin: 0; }
+.subtitle { color: #5C5640; margin-top: 6px; font-size: 14px; }
+.statusStrip {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  background: #001F18;
+  color: #F2EEE1;
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-size: 13px;
+}
+.statusOk { color: #D4FF28; font-weight: 600; }
+.statusBad { color: #ff8c66; font-weight: 600; }
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 13px;
+  padding: 12px;
+  border: 1px solid #1A140033;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+.button {
+  margin-top: 16px;
+  width: 100%;
+  padding: 13px;
+  border: 0;
+  border-radius: 8px;
+  background: #D4FF28;
+  color: #1A1400;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+.button:disabled { opacity: 0.45; cursor: not-allowed; }
+.error { color: #B3261E; font-size: 13px; margin-top: 10px; }
+.note { color: #5C5640; font-size: 12px; margin-top: 10px; line-height: 1.5; }
+.claimBox {
+  background: #F2EEE1;
+  border: 1px solid #1A140022;
+  border-radius: 8px;
+  padding: 12px;
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 11px;
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.row { display: flex; gap: 8px; margin-top: 10px; }
+.smallBtn {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid #1A140033;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+}
+.txHash { font-family: "Geist Mono", ui-monospace, monospace; font-size: 12px; word-break: break-all; }

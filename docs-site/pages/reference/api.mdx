@@ -1,0 +1,212 @@
+---
+title: HTTP APIs
+---
+
+import { Callout } from 'nextra/components';
+
+# HTTP APIs
+
+Quetzal exposes two minimal HTTP services. Both run on the operator's VPS / Vercel infra; neither holds user secrets.
+
+- **Aggregator** — reveal ingestion + clearing daemon (`aggregator.quetzaldex.xyz`)
+- **Faucet** — Aztec drip pipeline (`https://faucet.quetzaldex.xyz`)
+
+## Aggregator API
+
+Base URL: `https://aggregator.quetzaldex.xyz` (TLS via Caddy; live since 2026-06-10).
+
+### `POST /reveal`
+
+Submits a plaintext reveal of an order placed in the previous or current epoch. The aggregator buffers reveals in memory until the epoch closes, replays the `order_acc` Poseidon2 chain against on-chain state, and includes valid reveals in the next clearing.
+
+**Request body** *(zod-validated)*:
+
+```ts
+{
+  epoch_id: number;          // u32, the epoch the order was placed in
+  order_nonce: string;       // 0x-prefixed Field
+  side: boolean;             // false = buy canonical-low, true = sell
+  amount_in: string;         // decimal bigint string
+  limit_price: string;       // decimal bigint string (18-dec fixed)
+  submitted_at_block: number; // u32, L2 block number of submit
+  owner: string;             // 0x-prefixed AztecAddress
+  submission_tx_hash?: string;
+}
+```
+
+**Response**:
+
+```json
+{ "ok": true }
+```
+
+**Errors**:
+
+- `400 { "error": "invalid payload", "issues": [...] }` — zod validation failed
+- The aggregator does *not* reject duplicates at HTTP time; dedup happens in the queue layer keyed by `(epoch_id, order_nonce)`.
+
+```bash
+curl -X POST https://aggregator.quetzaldex.xyz/reveal \
+  -H "Content-Type: application/json" \
+  -d '{
+    "epoch_id": 47,
+    "order_nonce": "0xabc...",
+    "side": false,
+    "amount_in": "1000000",
+    "limit_price": "1500000000000000000",
+    "submitted_at_block": 12345,
+    "owner": "0x..."
+  }'
+```
+
+In practice, you don't call this directly. The SDK's `client.aggregator.broadcastReveal()` and `client.aggregator.directReveal()` wrap it.
+
+### `GET /health`
+
+Liveness + watcher state.
+
+**Response**:
+
+```json
+{
+  "ok": true,
+  "service": "quetzal-aggregator",
+  "queueSize": 0,
+  "watcher": {
+    "status": "polling",
+    "lastEpochSeen": 47,
+    "lastBlockSeen": 12345,
+    "lastError": null,
+    "lastPollAt": "2026-05-29T17:00:00.000Z"
+  }
+}
+```
+
+`watcher.status` values:
+
+| Status | Meaning |
+|---|---|
+| `polling` | Healthy; watching the orderbook |
+| `idle` | Started, first poll not completed yet |
+| `disabled` | Watcher off — missing node URL, orderbook address or secret |
+| `error` | Last poll or bootstrap failed; see `lastError` |
+
+The frontend's landing-page status pill (`live` / `degraded` / `down`) probes this endpoint + the faucet `/api/health` and ORs the results.
+
+### `GET /proof`
+
+Returns the Merkle inclusion proof for one filled hop, from the per-epoch hop
+snapshot the aggregator writes when it clears. This is what `claimFill` calls
+before submitting `claim_fill` — without it a maker cannot redeem a fill.
+
+**Query parameters**
+
+| Param | Required | Meaning |
+|---|---|---|
+| `order_nonce` | yes | 0x-prefixed hex Field |
+| `epoch_id` | no | omit to let the aggregator find the epoch containing the fill |
+| `hop_index` | no | defaults to every populated hop |
+
+**Response `200`**
+
+```json
+{
+  "epoch_id": 1855,
+  "fills_root": "0x1ec5d508...",
+  "fills": [
+    {
+      "order_nonce": "0x0044fa44...",
+      "hop_index": 0,
+      "amount_out": "99699899",
+      "pool_id": 0,
+      "leaf_index": 0,
+      "sibling_path": ["0x0f54d56d...", "..."]
+    }
+  ]
+}
+```
+
+`sibling_path` is always depth 6 (64-leaf tree). Decoy hops (`amount_out: "0"`)
+are filtered out.
+
+**Errors** — `400` malformed/missing `order_nonce`; `404` no snapshot contains a
+fill for that nonce (not filled yet, or the aggregator never wrote a snapshot for
+it — note snapshots live on the aggregator's disk, so a rebuilt host starts empty).
+
+
+## Faucet API
+
+Base URL: `https://faucet.quetzaldex.xyz`.
+
+### `POST /api/drip`
+
+Drips fee-juice + tUSDC + tETH to an Aztec L2 address. See [Get test tokens](/getting-started/faucet) for the user flow.
+
+**Request body**:
+
+```ts
+{
+  address: string;          // 0x-prefixed AztecAddress
+  captchaToken?: string;    // reCAPTCHA v3 token (omit when the origin is captcha-exempt)
+}
+```
+
+**Response (200)**:
+
+```json
+{
+  "success": true,
+  "l1TxHash": "0x...",
+  "l2ClaimAmount": "100000000000",
+  "l2LeafIndex": 95092738,
+  "tUSDCTxHash": "0x...",
+  "tETHTxHash": "0x..."
+}
+```
+
+**Errors**:
+
+- `400 { "success": false, "error": "invalid body: ..." }` — zod validation failed
+- `403` — CORS Origin not in allowlist
+- `429 { "success": false, "error": "rate limit exceeded" }` — IP exceeded 4 drips per 8 hours
+- `503 { "success": false, "error": "drained" }` — operator's L2 mint balance below threshold
+
+CORS: only the configured allowlist (frontend prod + preview Vercel URLs) is accepted. Cross-origin requests from elsewhere get `403`.
+
+A successful call takes 2–4 minutes wall time (ClientIVC proof gen + L1 inbox finalisation + L2 mint).
+
+<Callout type="warning">
+  Don't script bulk drips. The faucet operator pays real Sepolia ETH for every L1 deposit; abuse depletes the hot wallet and degrades testnet for everyone.
+</Callout>
+
+### `GET /api/health`
+
+Same shape as documented in [Get test tokens → Health endpoint](/getting-started/faucet#health-endpoint).
+
+### `GET /api/metrics`
+
+Prometheus exposition-format metrics. Used by the Sub-5c monitoring stack. Sample exported keys:
+
+- `faucet_l1_balance_eth`
+- `faucet_l1_balance_feejuice`
+- `faucet_l2_balance_tusdc`
+- `faucet_l2_balance_teth`
+- `faucet_drip_total{result="ok|err"}`
+- `faucet_drip_duration_seconds`
+- `faucet_rate_limit_unique_ips`
+- `faucet_rate_limit_windowed`
+
+Scrape interval is operator-configured; the public Prometheus is operator-only.
+
+## Authentication
+
+Neither API requires authentication for the public endpoints. Rate limiting is by IP + CORS Origin only.
+
+For aggregator registration (which is a privileged on-chain operation, not an HTTP one), see `client.aggregator.register()` in the [SDK reference](/reference/sdk#aggregator-api).
+
+## Reference
+
+- Aggregator: `aggregator/src/server.ts`
+- Faucet: `faucet/src/pages/api/{drip,health,metrics}.ts`
+- Aggregator runbook: `aggregator/ops/RUNBOOK-aggregator.md`
+- Bridge runbook: `aggregator/ops/RUNBOOK-bridge.md`

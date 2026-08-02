@@ -1,0 +1,99 @@
+---
+title: Contract addresses
+---
+
+import { Callout } from 'nextra/components';
+
+# Contract addresses
+
+Live testnet deployment, generated from [quetzal.config.json](https://github.com/Kubudak90/quetzal/blob/main/quetzal.config.json) — the canonical address book.
+
+<Callout type="warning">
+  Aztec testnet is redeployed periodically by Aztec Labs, and every reset moves all of these. The tables below are generated from `quetzal.config.json`; if anything here disagrees with that file, the file wins.
+</Callout>
+
+{/* BEGIN:generated-addresses — `pnpm exec tsx scripts/gen-docs-addresses.ts` */}
+
+## Network
+
+| Field | Value |
+|---|---|
+| Network | `alpha-testnet` |
+| Aztec node | `https://v5.testnet.rpc.aztec-labs.com` (browser-friendly proxy: `https://node.quetzaldex.xyz`) |
+| L1 chain | Ethereum Sepolia (chain id 11155111) |
+| L2 rollup version | `1821665230` |
+| Epoch length | 10 L2 blocks |
+| VK hash (clearing circuit) | `0x20f45faf5c1d7ef17f6c1ad248cd7c032636d908c46c01f7f004bc26c75cd4f9` |
+
+## Core L2 contracts
+
+| Contract | Address |
+|---|---|
+| **Admin (deploy + token minter)** | `0x1fdb4ff3473f0ea4b4b1d30d019a6a042c4e014ecea0a01ff209d1abe8b02856` |
+| **Orderbook** | `0x2a9a1d0e8f1974267536abefa565e7a7351f92ddbe95ec13c57c79b70664f7c8` |
+| **Treasury** | `0x002dce0c006f279fe9caf31b1d11fd18222f94a2ffd4783deabe492acb4f659e` |
+| **AggregatorRegistry** | `0x1d572066d43a1035daffb9df101c580d3227873cee19707dc39241928ebd6e5b` |
+
+## Tokens (L2, hybrid)
+
+The trading tokens are **both** admin-mintable (for the faucet) **and**
+bridge-claimable — L1 deposits credit these same contracts directly.
+
+| Token | Address | Decimals |
+|---|---|---|
+| **tUSDC** | `0x28406d385702001e13128d90fcc3251bb55359c8e2238dd8db37e7e6af4e060f` | 6 |
+| **tETH** | `0x2fcd3dd598380bd949f7d6cb9d57e0251e512bde7d05c36f7257bf8db6c3041f` | 18 |
+| **tBTC** | `0x26b455c2d154b71357e74bebdecfaebb8484ca023a00cddee597f5220d73b903` | 8 |
+
+## Pools
+
+| Pool | Pair (token_a / token_b) | Address |
+|---|---|---|
+| 0 | tETH / tUSDC | `0x0e7f2ca971f9eb83e492ca5db0fff070dfd06e0757e626bcf9e7fdba50d16bb3` |
+| 1 | tBTC / tUSDC | `0x11dc93b60e844b233b67016aa2d9a23d9d4bc5337f568ebbda628692c08f7f8d` |
+| 2 | tETH / tBTC | `0x2c8980148077bb135768a77352b32c4552eac2a3ae78c8305a8c400bbe657da8` |
+
+Per-pool bucket math is parameterized by:
+
+- `bucketPMinSqrt = 100_000_000_000_000_000`
+- `bucketGrowthNum = 1_500_000_000_000_000_000` (1.5×, 16 buckets)
+
+## L1 contracts (Sepolia)
+
+| Contract | Address |
+|---|---|
+| **Governance Timelock** | `0xFfa93dEaDd6B90D9A665338931C92fdAFacD648f` |
+| **Emergency Timelock** | `0xaEaCC3EAC9e735856E59319A29C5787ce00E12C2` |
+| **USDC bridge** | `0x75F91B5D8944a962CdfeB1564eFC94f1F202bD9C` |
+| **WETH bridge** | `0x996e71253bC97CF18583aec9C9e8AAe197dce75a` |
+| **wBTC bridge** | `0x949B3A65F09Cc7650239fBB8483b632a750F2EA3` |
+
+{/* END:generated-addresses */}
+
+## Aggregator endpoint
+
+| Endpoint | URL |
+|---|---|
+| Health | `https://aggregator.quetzaldex.xyz/health` |
+| Reveal | `https://aggregator.quetzaldex.xyz/reveal` |
+
+The app itself submits reveals through its same-origin proxy (`quetzaldex.xyz/api/reveal`); the public endpoint above is for independent aggregator monitoring and CLI use.
+
+## Faucet endpoints
+
+| Endpoint | URL |
+|---|---|
+| **Public page** | `https://faucet.quetzaldex.xyz/` |
+| Drip (POST, captcha-protected) | `https://faucet.quetzaldex.xyz/api/drip` |
+| UI config | `https://faucet.quetzaldex.xyz/api/config` |
+| Health | `https://faucet.quetzaldex.xyz/api/health` |
+| Metrics | `https://faucet.quetzaldex.xyz/api/metrics` |
+
+## Frontend
+
+| URL | Use |
+|---|---|
+| [quetzaldex.xyz](https://quetzaldex.xyz) | Main app (production) |
+| [faucet.quetzaldex.xyz](https://faucet.quetzaldex.xyz) | Public faucet page |
+| [docs.quetzaldex.xyz](https://docs.quetzaldex.xyz) | This documentation |
+| [github.com/Kubudak90/quetzal](https://github.com/Kubudak90/quetzal) | Source repo · [Litepaper](https://github.com/Kubudak90/quetzal/blob/main/LITEPAPER.md) |

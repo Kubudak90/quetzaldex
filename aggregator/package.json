@@ -1,0 +1,27 @@
+{
+  "name": "@quetzal/aggregator",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --import tsx --test 'test/**/*.test.ts'",
+    "typecheck": "tsc --noEmit",
+    "start": "node --import tsx src/main.ts"
+  },
+  "dependencies": {
+    "@aztec/foundation": "5.0.0",
+    "@aztec/aztec.js": "5.0.0",
+    "@quetzal/sdk": "workspace:*",
+    "fastify": "^4.28.0",
+    "viem": "^2.21.0",
+    "zod": "^3.23.0",
+    "@aztec/ethereum": "5.0.0",
+    "@aztec/stdlib": "5.0.0",
+    "@aztec/wallets": "5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

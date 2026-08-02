@@ -1,0 +1,23 @@
+{
+  "epoch_id": 3,
+  "fills_root": "0x259ba61175260011fa720eef33c82e0aa422a68345357d3a9dc168b412aaf20e",
+  "hop_fills": [
+    {
+      "order_nonce": "0x00043a0225cd7f0067f328a630ca1e1be9ddc655668913d18c56e8d46c069bbd",
+      "hop_index": 0,
+      "amount_out": "99699899",
+      "pool_id": 0,
+      "leaf_index": 0
+    }
+  ],
+  "hop_paths": {
+    "0x00043a0225cd7f0067f328a630ca1e1be9ddc655668913d18c56e8d46c069bbd:0": [
+      "0x20be000d93b852c82d4e02c94e9e61fa3a0e79949aac3af4010620651d416134",
+      "0x2b531be43bcdbfb0014cd8842cf18be46bcb09cfbcccb467cf5f27190a80e480",
+      "0x0c8d11fe4e37bac6ca7f730a6dd8cf8e5b5eb43a0ba455682556c7e9edc8bf8b",
+      "0x2616182a5261077406bad05306c3ac575664f3934af8f35572a6303909002247",
+      "0x09b61b4d3868115549b3746d1d92583c079884ebffe17d5167bf385ed6408e84",
+      "0x18fac0ce38899869988418ed1fd8a172091f9af56ba5f90d16c5ee49522e3ca6"
+    ]
+  }
+}

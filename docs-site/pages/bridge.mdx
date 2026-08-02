@@ -1,0 +1,128 @@
+---
+title: Bridge
+---
+
+import { Callout, Steps } from 'nextra/components';
+
+# Bridge
+
+Quetzal's L1 ↔ L2 token bridge moves canonical Sepolia tokens onto Aztec L2 and back. Since the **hybrid-token migration (2026-06)** deposits credit the *same* tokens that trade on Quetzal — there is no separate "aToken" wrapper anymore.
+
+| L1 (Sepolia) | L2 (Aztec) | L1 bridge contract |
+|---|---|---|
+| USDC | **tUSDC** (hybrid) | `0x219ffbb6…48a9936b` |
+| WETH | **tETH** (hybrid) | `0x3f5aab58…b97afe2d` |
+| wBTC | — *temporarily disabled* | `0x6ac87d98…ac4e5b5fd` |
+
+<Callout type="info">
+  **wBTC bridging is hidden in the UI for now:** the deployed wBTC bridge's `l1Token` points at the mainnet WBTC address, which has no code on Sepolia, so deposits revert. It returns after a UUPS upgrade repoints it at a Sepolia test token.
+</Callout>
+
+The bridge is built on the standard Aztec L1↔L2 portal pattern. `TokenBridge.sol` (UUPS + AccessControl) on Sepolia deposits emit an L1Inbox message; Aztec's protocol-level outbox handles the L2→L1 return path. Content hashes match on `sha256_to_field(abi.encode(...))` on both sides.
+
+## Where it lives
+
+- **UI:** `/bridge` tab on [quetzaldex.xyz/bridge](https://quetzaldex.xyz/bridge)
+- **Wallet:** MetaMask on Sepolia (chain ID 11155111)
+- **L1 contracts:** `contracts-l1/TokenBridge.sol`, deployed once per asset
+- **L2 contract:** `Token.nr` in bridge mode (`is_bridged: PublicImmutable<bool>`)
+
+## L1 → L2 (deposit + claim)
+
+A deposit is a two-step flow because Aztec L1 messages don't auto-execute on L2 — they wait in the L2 inbox for the recipient to claim.
+
+<Steps>
+
+### Approve + deposit (L1)
+
+You connect MetaMask, choose Public or Private deposit, enter an amount. The frontend calls `TokenBridge.depositToL2Public(amount, recipient)` or `depositToL2Private(amount, secretHash)`. Both consume your token allowance + emit `DepositInitiated`.
+
+The SDK then parses the receipt's `L1Inbox.MessageSent(checkpointNumber, index, hash, rollingHash)` event and surfaces `hash` as `BridgeDepositResult.messageHash`. This avoids client-side hash reconstruction.
+
+### Wait for L2 inbox ingestion (~6–10 min)
+
+Aztec's sequencer batches L1 messages into its inbox tree on L2. Your deposit message becomes claimable once it's included in a finalised L2 block. The [`getMessageReady`](https://github.com/Kubudak90/quetzal/blob/main/sdk/src/bridge.ts) call polls until your message lands.
+
+### Claim on L2
+
+Once `getMessageReady` returns `true`, you call `client.bridge.claim({ messageHash, ... })`. This nullifies the L2 inbox message and credits tUSDC / tETH to your L2 address. The credit is **public** for a public deposit or **private** for a private deposit (the L2 `Token.claim_private` mints into a private balance + your supplied secret).
+
+</Steps>
+
+## L2 → L1 (exit + L1-withdraw)
+
+The reverse direction is also two steps. The L2 exit emits an L2→L1 outbox message; you then prove inclusion on L1 to actually receive your tokens.
+
+<Steps>
+
+### Exit on L2
+
+Pick Public or Private exit. Public exit (`Token.exit_to_l1_public`) burns from your public balance + emits an L2 outbox message with the L1 consumer pointing at the bridge. Private exit (`Token.exit_to_l1_private`) burns from your private balance.
+
+The bridged L2 supply decreases immediately. Your L1 tokens are not yet claimable.
+
+### Wait for L2 epoch to prove on L1 (~30 min)
+
+Aztec proves epochs back to L1 in batches. Your outbox message becomes consumable on L1 only after the L2 epoch containing it is proven + finalised on L1.
+
+The frontend persists pending withdraws in `localStorage` and polls `buildOutboxProof` until the inclusion proof is constructable. You can close the tab; the state survives.
+
+### Withdraw on L1
+
+Once `buildOutboxProof` returns a non-error result, the *Withdraw on L1* button activates. The SDK calls `client.bridge.prepareL1Withdraw({ ... })` which returns the calldata for either `TokenBridge.withdraw(amount, recipient, l2Epoch, leafIndex, siblingPath)` (public exit) or `TokenBridge.withdrawPrivate(...)` (private exit). MetaMask signs the call; the bridge contract verifies the outbox proof + transfers the L1 token.
+
+</Steps>
+
+## Public vs Private mode
+
+| Mode | L1 → L2 (deposit) | L2 → L1 (exit) |
+|---|---|---|
+| **Public** | L1 tokens unlocked → L2 public balance credited | L2 public balance burned → L1 tokens unlocked |
+| **Private** | L1 tokens unlocked → L2 private note credited (you keep a secret) | L2 private note nullified → L1 tokens unlocked to a specified recipient |
+
+The Private deposit path needs you to remember a `claimSecret` between deposit + claim. The Sub-7c UI persists it in `localStorage`; if you lose it, the deposit is recoverable via the [3-phase `recoverDeposit`](https://github.com/Kubudak90/quetzal/blob/main/contracts-l1/src/TokenBridge.sol) governance flow after a 90-day window.
+
+## Governance + emergency pause
+
+`TokenBridge` is `AccessControl`-governed with two roles + two timelocks:
+
+- **GOVERNANCE_ROLE** — held by a 3-of-5 multisig behind a 7-day `TimelockController`. Can change L2 token address, upgrade the UUPS implementation, change TVL caps, call `recoverDeposit`.
+- **EMERGENCY_PAUSER_ROLE** — held by a different multisig behind a 0-day timelock. Can only call `pause()` / `unpause()`. The role admin is the role itself (self-admin invariant) so governance cannot revoke it without a 7-day timelock + the multisig's consent.
+
+This split is deliberate: a security incident should be able to pause deposits inside the 7-day governance window without needing 7-day prior notice.
+
+## TVL caps
+
+Each asset has a per-asset cap. On testnet the caps are large; on mainnet the launch policy is:
+
+| Window | USDC cap | WETH cap | wBTC cap |
+|---|---|---|---|
+| Day 0 – 30 | $10k | 5 WETH | 0.2 wBTC |
+| Day 30 – 60 | $50k | 25 WETH | 1 wBTC |
+| Day 60 – 90 | $250k | 125 WETH | 5 wBTC |
+| Day 90+ | Unlimited (after audit + governance vote) | Unlimited | Unlimited |
+
+`maxTvl == 0` means **unlimited**, not zero — this is a deliberate convention documented in NatSpec on each setter.
+
+## Failure modes
+
+| What you'll see | Likely cause | What to do |
+|---|---|---|
+| `getMessageReady` returns false for >15 min | Sequencer hasn't ingested the L1 message yet | Wait. Sepolia + Aztec testnet are both slow. |
+| Claim reverts with `unknown message` | L1 deposit hasn't finalised on L2 yet | Wait, retry. |
+| Exit succeeds, but `buildOutboxProof` errors with `OutboxProofNotReady` for hours | L2 epoch hasn't proven on L1 yet | Normal; can take 30–90 min on testnet. |
+| L1 withdraw reverts with `invalid sibling path` | siblingPath doesn't match the L1 outbox state | Re-fetch via `buildOutboxProof` and retry. Don't hand-edit. |
+| `BridgeError: unknown token alias` | SDK token alias mismatch (a system-wide bug fixed in Sub-7c, commit `b6e7df9`) | Update SDK to latest `main`. |
+| Pause banner on `/bridge` | Emergency pauser triggered | Watch the GitHub repo + on-call channel for an unpause. |
+
+<Callout type="warning">
+  **Don't bridge real-value tokens to testnet.** The L1 bridge contracts on Sepolia are production-grade UUPS, but the L2 side runs on Aztec testnet, which is regularly redeployed by Aztec Labs. Funds bridged in can be permanently unrecoverable if the L2 chain is reset.
+</Callout>
+
+## Reference
+
+- L1 contract: [`contracts-l1/src/TokenBridge.sol`](https://github.com/Kubudak90/quetzal/blob/main/contracts-l1/src/TokenBridge.sol)
+- L2 token bridge mode: [`contracts/token/src/main.nr`](https://github.com/Kubudak90/quetzal/blob/main/contracts/token/src/main.nr) (`claim_public`, `claim_private`, `exit_to_l1_public`, `exit_to_l1_private`)
+- SDK methods: `client.bridge.deposit`, `getMessageReady`, `claim`, `exit`, `prepareL1Withdraw`
+- Runbook (operator): `aggregator/ops/RUNBOOK-bridge.md`
+- Audit notes: `contracts-l1/AUDIT.md`

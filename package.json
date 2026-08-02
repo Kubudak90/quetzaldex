@@ -1,0 +1,31 @@
+{
+  "name": "quetzal",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "compile": "bash scripts/compile-all.sh",
+    "codegen": "bash scripts/codegen.sh",
+    "pretest": "bash scripts/codegen.sh",
+    "test": "pnpm -r --filter './tests/**' --filter './aggregator' test",
+    "test:noir": "bash scripts/compile-all.sh && ROOT=\"$PWD\" && VERSION=$(tr -d '[:space:]' < \"$ROOT/.aztec-version\") && for d in contracts/*/; do pkg=${d%/}; docker run --rm --entrypoint bash -v \"$ROOT:/work\" -w \"/work/$pkg\" \"aztecprotocol/aztec:$VERSION\" -c 'export LOG_LEVEL=info; node --no-warnings /usr/src/yarn-project/aztec/dest/bin/index.js start --txe --port 8081 & while ! nc -z 127.0.0.1 8081 >/dev/null 2>&1; do sleep 0.2; done; export NARGO_FOREIGN_CALL_TIMEOUT=300000; /usr/src/noir/noir-repo/target/release/nargo test --silence-warnings --show-output --oracle-resolver http://127.0.0.1:8081' ; done",
+    "deploy:tokens": "tsx scripts/deploy-tokens.ts",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck"
+  },
+  "devDependencies": {
+    "@aztec/stdlib": "5.0.0",
+    "tsx": "^4.19.0",
+    "viem": "^2.21.0"
+  },
+  "dependencies": {
+    "@aztec/accounts": "5.0.0",
+    "@aztec/aztec.js": "5.0.0",
+    "@aztec/wallets": "5.0.0",
+    "@aztec/ethereum": "5.0.0"
+  }
+}

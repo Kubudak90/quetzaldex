@@ -1,0 +1,17 @@
+FROM node:22-alpine
+
+ARG TARGET=l1
+
+WORKDIR /app
+RUN npm install -g pnpm@9
+
+# Copy package files and install
+COPY tools/exporters/package.json tools/exporters/tsconfig.json ./
+RUN pnpm install --no-frozen-lockfile
+
+# Copy source
+COPY tools/exporters/src ./src
+
+# Run l1 or l2 exporter
+ENV TARGET=${TARGET}
+CMD ["sh", "-c", "pnpm $TARGET"]

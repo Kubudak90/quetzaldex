@@ -1,0 +1,51 @@
+# Sub-8.1 aggregator — docker-compose for VPS deployment.
+#
+# Usage from /repo/aggregator (on the VPS, under /root/quetzal-aggregator/aggregator):
+#   docker compose build      # build the image (context = ..)
+#   docker compose up -d      # start in background
+#   docker compose logs -f    # tail (JSON-line logs)
+#   docker compose down       # stop + remove
+#
+# Operator prerequisites:
+#   - .env.aggregator exists in this directory (copy .env.aggregator.example, fill in)
+#   - ./data directory writable by the container (snapshot JSONLs persist here)
+services:
+  aggregator:
+    build:
+      # Build context is the monorepo root so the Dockerfile can COPY
+      # aggregator/, sdk/, cli/, tests/, contracts/. The Dockerfile lives
+      # one level down.
+      context: ..
+      dockerfile: aggregator/Dockerfile
+    image: quetzal-aggregator:latest
+    container_name: quetzal-aggregator
+    restart: unless-stopped
+    # .env.aggregator contains:
+    #   - AZTEC_NODE_URL              L2 RPC
+    #   - ORDERBOOK_ADDRESS           L2 Orderbook contract
+    #   - POOL_ADDRESS                L2 Pool contract (optional in MVP)
+    #   - TREASURY_ADDRESS            L2 Treasury contract (optional)
+    #   - AGGREGATOR_REGISTRY_ADDRESS L2 AggregatorRegistry (optional in MVP)
+    #   - TUSDC_ADDRESS / TETH_ADDRESS / ADMIN_ADDRESS  (SDK contract registry)
+    #   - AGGREGATOR_L2_SECRET        ephemeral wallet for read-only PXE
+    #   - WATCHER_INTERVAL_MS         epoch poll cadence
+    #   - LOG_LEVEL                   info|debug
+    # See .env.aggregator.example for the full schema.
+    env_file: .env.aggregator
+    ports:
+      # 3001 host → 3000 container.  Faucet owns 3030 already; pick 3001 so
+      # the two services don't collide.  Caddy reverse-proxies
+      # aggregator.quetzaldex.xyz → localhost:3001.
+      - "3001:3000"
+    volumes:
+      # Snapshot JSONLs (clearing fills + Merkle trees) persist across
+      # container restarts.  Bind-mount so the operator can `ls` from host.
+      - ./data:/repo/aggregator/data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      # PXE bootstrap (LMDB open + Schnorr account registration) takes
+      # ~3-5s on a warm cache, up to 30s cold.  Give a generous window.
+      start_period: 60s

@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "typeRoots": [
+      "../node_modules/.pnpm/@types+node@22.19.19/node_modules/@types",
+      "../node_modules/@types"
+    ]
+  },
+  "include": ["*.ts", "lib/**/*.ts"]
+}

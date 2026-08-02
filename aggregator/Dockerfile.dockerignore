@@ -1,0 +1,19 @@
+# Aggregator Dockerfile — context is monorepo root.  Mirror faucet's ignore
+# rules: skip every node_modules tree (the deps stage installs them via pnpm
+# from the lockfile, never copied from host) and large per-package build
+# caches that don't influence the runtime.
+**/node_modules
+**/.next
+**/.turbo
+**/dist
+**/coverage
+**/.git
+**/.DS_Store
+testnet-*
+wallet_data_*
+*.log
+deploy-bridge-state.json
+testnet-bridge-e2e-state.json
+testnet-m*-state.json
+testnet-pool-state-*.json
+testnet-sub6b-*

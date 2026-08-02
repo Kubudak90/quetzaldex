@@ -1,0 +1,23 @@
+{
+  "name": "quetzal-docs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Documentation site for Quetzal — MEV-resistant dark-pool DEX on Aztec Network",
+  "scripts": {
+    "dev": "next",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^14.2.15",
+    "nextra": "^2.13.4",
+    "nextra-theme-docs": "^2.13.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "typescript": "^5.5.4"
+  }
+}

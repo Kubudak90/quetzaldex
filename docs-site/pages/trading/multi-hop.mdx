@@ -1,0 +1,89 @@
+---
+title: Multi-pair routing
+---
+
+import { Callout } from 'nextra/components';
+
+# Multi-pair routing
+
+Quetzal's clearing circuit (Sub-4) supports **explicit 2-hop maker paths** across multiple pools. The current testnet ships with a 3-pool triangle:
+
+| Pool | Pair | Address |
+|---|---|---|
+| 0 | tUSDC / tETH | `0x0cd94fcc…4949a0` |
+| 1 | tUSDC / tBTC | `0x15d46345…f094c6` |
+| 2 | tETH / tBTC | `0x1b0715f1…efea63` |
+
+This page covers how to express a 2-hop order and what the clearing circuit guarantees end-to-end.
+
+## When you need 2-hops
+
+A 1-hop order is the common case: "swap tUSDC for tETH" routes through pool 0. The orderbook batches that with every other 1-hop USDC/ETH order in the same epoch and clears them at a uniform price.
+
+A 2-hop order is for trades the orderbook can't fill in a single pool. The simplest example:
+
+> "Swap tUSDC for tBTC, but route through tETH because pool 1 (USDC/BTC) is shallow today and pool 2 (ETH/BTC) is deeper."
+
+You submit a single order with `path = [tUSDC, tETH, tBTC]`. The orderbook treats this as one logical order routed across pools 0 and 2.
+
+## Placing a 2-hop order
+
+```ts
+import { QuetzalClient } from '@quetzal/sdk';
+
+const client = await QuetzalClient.connect({ /* ... */ });
+
+await client.orders.placeOrder({
+  side: 'buy',                // canonical: pay path[0], receive path[last]
+  amount: 1_000_000n,          // 1 tUSDC in (6 decimals)
+  limitPrice: 500_000_000n,    // worst end-to-end price you'll accept
+  path: ['tUSDC', 'tETH', 'tBTC'],
+});
+```
+
+The SDK:
+
+1. Resolves token aliases to addresses.
+2. Canonicalizes the path (asserts `path[0] < path[last]` u128-truncated, flips side + reverses path if not).
+3. Hashes `path_len = 3` + the three addresses into the orderbook submit.
+
+The clearing circuit later validates:
+
+- The two consecutive hop endpoints map to *registered* pools in the orderbook's `pool_registry` (the Sub-5a mutable pool registry that AdminCan add pools to without redeploying).
+- The two hops use a consistent intermediate-asset balance: tokens out of hop A == tokens in of hop B for *this order*.
+- Each hop's per-bucket V3 math preserves constant product within each touched bucket.
+- A per-hop nullifier (Sub-5a, `Z_HOP_CLAIM_TAG`-domain-separated) prevents a 2-hop order from double-claiming on either leg.
+
+## Order discovery for the aggregator
+
+When you reveal a 2-hop order, the aggregator runs both hops in sequence inside the clearing loop:
+
+1. **Hop A.** Cross with eligible same-direction makers on pool A at clearing price `P*_A`. Net imbalance swaps through pool A's buckets.
+2. **Hop B.** Take the output of hop A. Cross with eligible same-direction makers on pool B at clearing price `P*_B`. Net imbalance swaps through pool B's buckets.
+
+If the resulting end-to-end price (your input → your output, including both hops + the 0.3% per-hop swap fee) violates your `limit_price`, your order is excluded from the batch and carries to next epoch. Same as a 1-hop limit-price violation.
+
+The aggregator's witness for a 2-hop order is *strictly larger* than a 1-hop's — `active_pool_clearings`, `fill_to_order_index[64]`, `pool_bucket_states_before/after[[BucketState;4];3]`, `pool_sqrt_p_before[u128;3]`, `pool_token_pairs[[Field;2];3]` all expand.
+
+## What's currently limited (carry-forward)
+
+The Sub-4 implementation is end-to-end provable but ships with **7 known limitations**, documented in [project_subproject4_complete.md](https://github.com/Kubudak90/quetzal/tree/main/docs):
+
+1. **2-hop double-claim** — partly closed by Sub-5a's per-hop nullifier; one corner case (cancel-then-claim race) is still open. **Don't submit 2-hop orders + then cancel them in the same epoch.**
+2. **1-hop DoS gap** — closed in Sub-5a circuit block B' (276K → 281K gates).
+3. **Token-pair truncation** — token addresses are stored as truncated `Field[2]` per pool slot, accepted as a one-time tradeoff against gate count.
+4. **Naive composite pricing** — the circuit doesn't try to find an optimal split across pools; it takes the explicit path the maker submitted.
+5. **No 3-hop routing** — circuit caps `path_len` at 3 (which means 2 hops, [start, mid, end]). 3-hop routing is post-mainnet.
+6. **Statistical privacy leak across hops** — the aggregator sees both hops of your order as linked. Sub-6d-style threshold aggregator + per-hop shielding is the long-term mitigation.
+7. **Fixed pool count.** Sub-5a mutable pool registry partially fixes this (admin can add pools without redeploying), but the circuit's per-clearing pool slots are hard-capped at `MAX_NUM_POOLS = 8` and per-clearing active pools at 4.
+
+<Callout type="warning">
+  **Most users should stick to 1-hop on testnet.** The triangle exists primarily to exercise the multi-pair circuit end-to-end. 2-hop orders on testnet are useful for testing your integration; on mainnet they will become primary once pool depth justifies routing.
+</Callout>
+
+## Reference
+
+- Path resolution + canonicalization: `sdk/src/orders.ts`
+- 2-hop witness shape: `aggregator/src/witness.ts`
+- Clearing circuit + per-hop nullifier: `circuits/clearing/src/main.nr`
+- Pool registry: `contracts/orderbook/src/pool_registry.nr`

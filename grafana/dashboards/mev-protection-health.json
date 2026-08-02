@@ -1,0 +1,25 @@
+{
+  "title": "Quetzal MEV-Protection Health",
+  "uid": "quetzal-mev-protection",
+  "tags": ["quetzal", "orderbook"],
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "60s",
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Seconds Since Last Clearing",
+      "gridPos": {"x": 0, "y": 0, "w": 8, "h": 4},
+      "targets": [{"expr": "time() - quetzal_l2_orderbook_last_clearing_timestamp", "refId": "A"}]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Treasury Balance (USDC)",
+      "gridPos": {"x": 8, "y": 0, "w": 8, "h": 4},
+      "targets": [{"expr": "quetzal_l2_treasury_balance{token=\"USDC\"}", "refId": "A"}]
+    },
+    {
+      "id": 3, "type": "stat", "title": "Aggregator Registry Size",
+      "gridPos": {"x": 16, "y": 0, "w": 8, "h": 4},
+      "targets": [{"expr": "quetzal_l2_aggregator_registry_size", "refId": "A"}]
+    }
+  ]
+}

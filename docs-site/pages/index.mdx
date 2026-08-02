@@ -1,0 +1,56 @@
+---
+title: Introduction
+---
+
+import { Callout, Cards, Card } from 'nextra/components';
+
+# Trade privately. Clear together.
+
+Quetzal is a MEV-resistant dark-pool DEX on [Aztec Network](https://aztec.network), an L2 ZK-rollup on Ethereum. It is an open-source port of [Penumbra's](https://penumbra.zone) Quetzal protocol — a frequent batch auction with a uniform clearing price — adapted to Aztec's native private state.
+
+Orders are sealed on-chain: side, amount, and limit price are encrypted. The protocol batches every order in a 10-block epoch and computes a single clearing price for all of them at the same time. No order book to front-run. No leaked direction. No MEV bots.
+
+This documentation covers how to use Quetzal on testnet today, how to integrate against the SDK, and how the protocol is built.
+
+<Callout type="warning" emoji="⚠️">
+**Testnet alpha.** Quetzal currently runs on the Aztec alpha-testnet (Sepolia L1). Tokens are testnet-only and have no value. No external audit yet (engagement pending); do not move real funds yet.
+</Callout>
+
+## Where to start
+
+<Cards>
+  <Card title="Try it now" href="/getting-started" arrow>
+    Open the [app](https://quetzaldex.xyz), set up a wallet, drip from the faucet, place a first sealed order.
+  </Card>
+  <Card title="How clearing works" href="/trading" arrow>
+    Sealed orders, batch auctions, uniform clearing price, what each epoch boundary does.
+  </Card>
+  <Card title="Bridge L1 ↔ L2" href="/bridge" arrow>
+    Move canonical USDC or WETH between Sepolia and Aztec via the token bridge (wBTC temporarily disabled).
+  </Card>
+  <Card title="Provide liquidity" href="/lp" arrow>
+    Concentrated liquidity in 16 buckets with geometric 1.5× spacing. Add and withdraw positions.
+  </Card>
+  <Card title="Architecture" href="/architecture" arrow>
+    Orderbook, pools, aggregator, bridge, faucet — the three-tier system and its trust assumptions.
+  </Card>
+  <Card title="SDK reference" href="/reference/sdk" arrow>
+    `@quetzal/sdk` — place orders, claim fills, bridge tokens, query pools from TypeScript.
+  </Card>
+</Cards>
+
+## What makes Quetzal different
+
+- **Sealed orders.** A user's side, amount, and limit price live inside an Aztec note. Only the encrypted commitment is on-chain until the epoch closes.
+- **Uniform clearing price.** Every fill in an epoch settles at the same price. No order on the book can be sniped at a worse price than another.
+- **K-decoy anonymity set.** Each real order can ship with up to four indistinguishable decoys (Sub-6a) so the order's existence does not pin its sender.
+- **Private LP positions.** Liquidity provider positions are notes too. The aggregate pool reserves are public (V3-style buckets); your share in those buckets is not.
+- **Permissionless aggregator.** Anyone can register, post a bond, and race to land the next clearing. Treasury pays a per-clearing fee. No protocol-blessed sequencer.
+- **Governed L1 bridge.** Canonical Sepolia assets move through a UUPS `TokenBridge` with role-based governance timelocks plus a 0-delay emergency pauser, crediting the same hybrid tokens that trade.
+- **ZK-verified settlement.** Every clearing is proven (UltraHonk) and verified on-chain before funds move, with an independent flow-conservation check.
+
+## Status — v0.1.0
+
+Quetzal v0.1.0 is live on Aztec alpha-testnet ([release notes](https://github.com/Kubudak90/quetzal/releases/tag/v0.1.0)). The full pipeline is **validated with live on-chain transactions**: hidden order submission, the on-chain verified clearing tx (`close_epoch_and_clear_verified`) — including the first **multi-pool settlement** (3 pools, 3 fills, one proof, 2026-06-10) — flow-binding conservation, and adversarial cases that revert with their exact designed errors. No external audit yet; testnet only.
+
+Read the **[Litepaper](https://github.com/Kubudak90/quetzal/blob/main/LITEPAPER.md)** for the full protocol design, honest limitations, and roadmap. For breaking changes, follow [github.com/Kubudak90/quetzal](https://github.com/Kubudak90/quetzal).

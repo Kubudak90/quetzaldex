@@ -1,0 +1,100 @@
+---
+title: Wallet pool
+---
+
+import { Callout } from 'nextra/components';
+
+# Wallet pool
+
+A *wallet pool* is N HD-derived Aztec accounts that round-robin every signed transaction. It is the recommended way to use Quetzal for any non-trivial activity.
+
+## Why a pool?
+
+Aztec's PXE (Private eXecution Environment) caps every wallet at **~18 unfinalised private submits** at a time. Hit the cap and the wallet throws `Highest used index N is further than window length from the highest finalized index`. The wallet is dead until enough of those submits finalise.
+
+For a normal user clicking *Place order* a few times a minute, 18 is plenty. For:
+
+- An LP that wants to claim fills from 32 sealed orders in parallel
+- An aggregator-style bot that relays reveals
+- A test runner submitting bulk orders
+
+…18 is not. The pool spreads the pending-tx counter across N independent children, multiplying capacity roughly `N × 18 − 6` (the −6 is overhead for the always-pending tagging cursor on each child).
+
+| Pool size | Approximate parallel-tx capacity |
+|---|---|
+| 1 | 12 |
+| 3 | 48 |
+| 5 | 84 |
+| 10 | 174 |
+| 20 | 354 |
+
+The default is 3, which is comfortable for ordinary trading and also matches the [faucet's per-IP rate limit](/getting-started/faucet#rate-limits) (3 drips fit inside one 8-hour window with a spare).
+
+## How derivation works
+
+The pool is fully deterministic. Given a `masterSecret` (32 bytes hex), the i-th child secret is:
+
+```
+child_i = sha256(masterSecret || u32_be(i)) modulo bn254_field
+```
+
+The result is masked to fit inside Aztec's bn254 scalar field. The original implementation used a plain `sha256(...) & mask` truncation which had a ~35% chance of overflowing the field; the SDK now uses [rejection sampling](https://github.com/Kubudak90/quetzal/blob/main/sdk/src/wallet/pool.ts) — keep rolling until the candidate is in range. This means a child's index `i` is *not* the same as the number of sha256 rounds, but the mapping is stable for a given master secret.
+
+**Implication:** the same master secret + the same `n` always produces the same N child addresses. Lose the secret, lose the pool. Save it.
+
+## Selecting a child for a call
+
+The pool uses round-robin with cap-aware skipping:
+
+```ts
+import { WalletPool } from '@quetzal/sdk';
+
+const pool = await WalletPool.fromMaster({
+  masterSecret: '0x...',
+  n: 3,
+  network: 'alpha-testnet',
+});
+
+// Round-robin: rotates 0 → 1 → 2 → 0 → ..., skipping any child at the cap.
+const client = pool.next();
+
+await client.orders.placeOrder({
+  side: 'buy',
+  amount: 1_000_000n, // 1 tUSDC (6 decimals)
+  limitPrice: 1_500_000_000_000_000_000n, // 1.5 tETH per tUSDC, 18-dec fixed-point
+  path: ['tUSDC', 'tETH'],
+});
+
+// Sticky: pin related ops to the same child (e.g. place + claim of one epoch).
+const epochClient = pool.acquireFor(`epoch-${epochId}`);
+await epochClient.orders.claimFill(...);
+```
+
+The pool exposes:
+
+- `next()` — round-robin, throws `WalletPoolExhausted` if all children are at the cap.
+- `acquireFor(tag)` — sticky selection (hash tag → child index) so you can keep a multi-step flow on one wallet.
+- `getAllOrders()` — fan out across every child and merge orders by `(epoch_id, order_nonce)`.
+- `getAggregatedBalance(token)` — sum a token across every child.
+
+A JS Proxy wraps `orders.{placeOrder, placeOrderBulk, claimFill, cancelOrder}` and `bridge.{claim, exit}` to increment + decrement the pending-tx counter per child automatically. You do not need to call any `release()` function manually.
+
+## Recovery
+
+There is no Quetzal-side recovery service. To restore an existing pool on a new browser:
+
+1. Open the [wizard](https://quetzaldex.xyz).
+2. Pick *Wallet Pool*.
+3. On the master-secret screen, click *Import existing*.
+4. Paste your hex secret.
+5. Match the same `n` you originally used.
+
+Children rederive byte-for-byte identical. Balances are still on chain, attached to the same Aztec addresses.
+
+<Callout type="warning">
+  **Different `n` ≠ subset of the same wallets.** A pool of 3 (children 0, 1, 2) does *not* share the first three children with a pool of 5. Derivation is sequential but rejection-sampled, so a child at logical index 2 in a `n=3` pool might be at logical index 3 in a `n=5` pool, depending on how many candidates were rejected along the way. Always restore with the same `n`.
+</Callout>
+
+## Single-wallet mode (Aztec Wallet extension)
+
+If you prefer an extension-managed signer, pick *Aztec Wallet* on the mode picker. The 18-pending cap still applies; there is no round-robin escape. This mode is best for users who occasionally place a few orders and don't care about throughput.

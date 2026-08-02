@@ -1,0 +1,442 @@
+/* ============================================================
+   Quetzal — app-specific layer on top of Aztec tokens
+   ============================================================ */
+
+:root {
+  /* Quetzal accent overrides: we keep Aztec's Chartreuse as PRIMARY
+     and use Aqua/Vermillion for public/private semantics from celari.
+     Quetzal also introduces a "decoy" semantic which uses Orchid
+     (a different signal than private — decoys are visible
+     unfillable noise, not your encrypted state). */
+  --q-decoy: var(--aztec-orchid);
+  --q-warn-soft: #C2701F; /* warm coral-orange for advisories */
+  --q-step: #E4DECB;      /* slightly darker parchment for step-pattern dividers */
+}
+
+/* ---- Dark / Malachite ground variant ---- */
+.theme-dark {
+  --bg: #00100C;
+  --bg-alt: #001F18;
+  --surface: #001F18;
+  --surface-card: #00231B;
+  --fg: var(--aztec-parchment);
+  --fg-muted: #93A39A;
+  --fg-subtle: #5F6F66;
+  --hairline: rgba(242, 238, 225, 0.10);
+  --hairline-strong: rgba(242, 238, 225, 0.22);
+  --q-step: rgba(242, 238, 225, 0.06);
+}
+
+/* ---- Reset / base ---- */
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body { margin: 0; overflow: hidden; }
+
+button { font-family: inherit; }
+
+/* ---- Mesoamerican step-pattern divider ----
+   A subtle 1px row with a stepped silhouette derived from
+   Mesoamerican textile motifs. Used between sections.
+*/
+.step-divider {
+  height: 8px;
+  background-image:
+    linear-gradient(90deg, var(--hairline) 1px, transparent 1px),
+    linear-gradient(180deg, transparent 7px, var(--hairline) 7px);
+  background-size: 12px 8px, 100% 8px;
+  background-position: 0 7px, 0 0;
+  opacity: 0.7;
+  position: relative;
+}
+.step-divider::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 6px,
+      var(--hairline) 6px 7px,
+      transparent 7px 12px
+    );
+  mask: linear-gradient(180deg, transparent 0 3px, #000 3px 5px, transparent 5px 100%);
+}
+
+/* Simpler row of small squares — used as a "weft" accent */
+.weft-row {
+  display: flex;
+  gap: 3px;
+  height: 6px;
+  align-items: center;
+}
+.weft-row span {
+  width: 3px; height: 3px;
+  background: var(--hairline-strong);
+}
+.weft-row span:nth-child(3n) { height: 6px; }
+
+/* ---- Privacy shimmer ----
+   Subtle gradient sweep on private-state badges. */
+@keyframes q-shimmer {
+  0%   { background-position: -120% 0; }
+  100% { background-position: 220% 0; }
+}
+.shimmer {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 26, 26, 0.0) 20%,
+    rgba(255, 26, 26, 0.18) 50%,
+    rgba(255, 26, 26, 0.0) 80%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: q-shimmer 3.6s linear infinite;
+}
+.shimmer-orchid {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 45, 244, 0.0) 20%,
+    rgba(255, 45, 244, 0.22) 50%,
+    rgba(255, 45, 244, 0.0) 80%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: q-shimmer 3.6s linear infinite;
+}
+
+/* ---- Pulsing dot for live epoch countdown ---- */
+@keyframes q-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.pulse-dot { animation: q-pulse 1.6s ease-in-out infinite; }
+
+/* ---- Tabular numerals on mono ---- */
+.mono, [data-mono] { font-variant-numeric: tabular-nums; }
+
+/* ---- Scrollbar (subtle) ---- */
+.q-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.q-scroll::-webkit-scrollbar-thumb { background: var(--hairline-strong); border-radius: 4px; }
+.q-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* ---- Card primitive ---- */
+.q-card {
+  background: var(--surface-card);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: 24px;
+}
+.q-card-tight { padding: 16px; }
+.q-card-deep {
+  background: var(--aztec-malachite);
+  color: var(--aztec-parchment);
+  border: 1px solid rgba(242, 238, 225, 0.10);
+}
+
+/* ---- Eyebrow text utility ---- */
+.q-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+/* ---- Inline pill / badge ---- */
+.q-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--hairline-strong);
+  background: transparent;
+  color: var(--fg);
+  white-space: nowrap;
+}
+.q-badge-private { color: var(--priv); border-color: var(--priv); }
+.q-badge-public  { color: var(--pub);  border-color: rgba(43,250,233,0.5); }
+.q-badge-decoy   { color: var(--q-decoy); border-color: rgba(255,45,244,0.5); }
+.q-badge-filled  { color: var(--aztec-ink); background: var(--aztec-chartreuse); border-color: var(--aztec-chartreuse); }
+.theme-dark .q-badge-filled { color: var(--aztec-ink); }
+.q-badge-cancel  { color: var(--fg-muted); }
+.q-badge-warn    { color: var(--q-warn-soft); border-color: rgba(194,112,31,0.45); background: rgba(194,112,31,0.06); }
+
+/* ---- Inline icon adjustments ---- */
+i[data-lucide] { display: inline-flex; vertical-align: middle; }
+
+/* ---- Tooltip ---- */
+.q-tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+}
+.q-tip [data-tip-body] {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  padding: 10px 12px;
+  background: var(--aztec-ink);
+  color: var(--aztec-parchment);
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-out);
+  z-index: 50;
+  text-align: left;
+  text-transform: none;
+}
+.q-tip:hover [data-tip-body] { opacity: 1; }
+
+/* ============================================================
+   PERSONA — three fundamentally different visual registers.
+   Renaissance (default) = Aztec brand as-shipped.
+   Terminal = cipherpunk: mono-everywhere, sharper, no italics.
+   Editorial = quiet: more serif, larger body, smaller eyebrows.
+   ============================================================ */
+
+/* Renaissance is the default — no override needed */
+
+.persona-terminal {
+  --font-display: var(--font-mono);
+  --font-display-alt: var(--font-mono);
+  --font-serif: var(--font-mono);
+  --font-body: var(--font-mono);
+  /* Tighten the rhythm — sharper, more data-feel */
+  --r-md: 2px;
+  --r-lg: 4px;
+  --r-xl: 4px;
+}
+.persona-terminal h1, .persona-terminal h2, .persona-terminal h3, .persona-terminal h4 {
+  letter-spacing: 0 !important;
+  font-weight: 500 !important;
+}
+.persona-terminal h1 em, .persona-terminal h2 em, .persona-terminal h3 em, .persona-terminal h4 em {
+  font-family: var(--font-mono) !important;
+  font-style: normal !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  position: relative;
+  padding: 0 0.15em;
+}
+.persona-terminal h1 em::before, .persona-terminal h2 em::before, .persona-terminal h3 em::before, .persona-terminal h4 em::before {
+  content: "[";
+  color: var(--aztec-chartreuse);
+  margin-right: 0.1em;
+}
+.persona-terminal h1 em::after, .persona-terminal h2 em::after, .persona-terminal h3 em::after, .persona-terminal h4 em::after {
+  content: "]";
+  color: var(--aztec-chartreuse);
+  margin-left: 0.1em;
+}
+/* In dark theme, terminal goes full cipherpunk green-on-black */
+.theme-dark.persona-terminal {
+  --aztec-chartreuse: #5DFF8A;
+  --fg: #5DFF8A;
+}
+
+.persona-editorial {
+  --font-display: var(--font-serif);
+  --font-body: var(--font-serif);
+  --font-display-alt: var(--font-serif);
+  /* Roomier — editorial likes air */
+  --sp-1: 6px;
+  --sp-2: 10px;
+  --sp-3: 14px;
+  --sp-4: 20px;
+}
+.persona-editorial h1, .persona-editorial h2, .persona-editorial h3, .persona-editorial h4 {
+  font-weight: 400 !important;
+  line-height: 1.15;
+}
+.persona-editorial .q-eyebrow {
+  font-family: var(--font-serif);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-style: italic;
+  color: var(--fg-muted);
+  font-weight: 400;
+}
+.persona-editorial .q-badge {
+  font-family: var(--font-serif);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+}
+.persona-editorial [data-mono] { letter-spacing: -0.005em; }
+
+/* ============================================================
+   MOTIF INTENSITY — controls feather watermarks, step
+   dividers, and shimmer animations.
+   ============================================================ */
+
+/* "none" — strip all decorative motifs */
+.motifs-none [data-feather-watermark],
+.motifs-none .step-divider-svg {
+  display: none !important;
+}
+.motifs-none .shimmer,
+.motifs-none .shimmer-orchid {
+  animation: none !important;
+  background-image: none !important;
+}
+.motifs-none .pulse-dot { animation: none !important; }
+
+/* "subtle" is the default — no overrides */
+
+/* "loud" — feather watermarks visible on many surfaces,
+   step pattern as a background texture on deep cards,
+   shimmer faster and more pronounced */
+.motifs-loud [data-feather-watermark] {
+  opacity: 0.14 !important;
+}
+.motifs-loud .q-card {
+  position: relative;
+  overflow: hidden;
+}
+.motifs-loud .q-card-deep {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(212, 255, 40, 0.04) 0 1px,
+      transparent 1px 14px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(212, 255, 40, 0.025) 0 1px,
+      transparent 1px 14px
+    );
+}
+.motifs-loud .shimmer,
+.motifs-loud .shimmer-orchid {
+  animation-duration: 1.8s !important;
+}
+.motifs-loud .shimmer {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%, rgba(255, 26, 26, 0.0) 20%,
+    rgba(255, 26, 26, 0.35) 50%,
+    rgba(255, 26, 26, 0.0) 80%, transparent 100%
+  ) !important;
+  background-size: 200% 100% !important;
+}
+.motifs-loud .shimmer-orchid {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%, rgba(255, 45, 244, 0.0) 20%,
+    rgba(255, 45, 244, 0.4) 50%,
+    rgba(255, 45, 244, 0.0) 80%, transparent 100%
+  ) !important;
+  background-size: 200% 100% !important;
+}
+
+/* ============================================================
+   RESPONSIVE — phone/tablet shell
+   Layout that JS can't express cleanly (viewport units, safe-area
+   insets, scroll containers) lives here; the breakpoint-dependent
+   inline styles are driven by src/hooks/use-media-query.ts.
+   ============================================================ */
+
+/* 100dvh so iOS Safari's collapsing toolbar doesn't clip the last row;
+   the 100vh line above it is the fallback for older engines. */
+.q-app-shell {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Horizontal escape hatch for the wide data tables (history, scheduled
+   exits, pending withdraws). Their column tracks are fixed by design —
+   squeezing them would destroy the tabular alignment, so on small
+   screens the table scrolls sideways inside its card instead. */
+.q-table-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+.q-table-scroll > * {
+  min-width: var(--q-table-min, 720px);
+}
+
+/* Bottom tab bar — replaces the 200px side nav under the breakpoint. */
+.q-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  background: var(--bg);
+  border-top: 1px solid var(--hairline);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.q-tabbar button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  /* 56px keeps every tab at/above the 44px minimum touch target. */
+  min-height: 56px;
+  padding: 8px 2px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: var(--fg-muted);
+  transition: color 120ms var(--ease-out);
+}
+.q-tabbar button[data-active="true"] {
+  color: var(--fg);
+}
+.q-tabbar button[data-active="true"] i {
+  color: var(--fg);
+}
+/* Active marker: a hairline above the tab, echoing the sidebar's ink pill. */
+.q-tabbar button[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 28px;
+  height: 2px;
+  background: var(--aztec-ink);
+}
+.theme-dark .q-tabbar button[data-active="true"]::before {
+  background: var(--accent);
+}
+.q-tabbar button {
+  position: relative;
+}
+
+/* Let long addresses / hashes wrap instead of forcing the card wider. */
+@media (max-width: 860px) {
+  .q-card,
+  .q-card-deep {
+    overflow-wrap: anywhere;
+  }
+}
+
+/* ---- Tweaks panel positioning override (don't fight starter) ---- */

@@ -1,0 +1,22 @@
+{
+  "name": "@quetzal/tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --import tsx --test --test-concurrency=1 --test-reporter=spec 'integration/**/*.test.ts'",
+    "test:watch": "node --import tsx --test --test-concurrency=1 --watch 'integration/**/*.test.ts'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aztec/aztec.js": "5.0.0",
+    "@aztec/accounts": "5.0.0",
+    "@aztec/foundation": "5.0.0",
+    "@aztec/wallets": "5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

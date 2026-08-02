@@ -1,0 +1,32 @@
+{
+  "index": "Introduction",
+  "getting-started": "Getting started",
+  "trading": "Trading",
+  "bridge": "Bridge",
+  "lp": "Liquidity provision",
+  "architecture": "Architecture",
+  "reference": "Reference",
+  "faq": "FAQ",
+  "-- links": {
+    "type": "separator",
+    "title": "Elsewhere"
+  },
+  "app-link": {
+    "title": "App ↗",
+    "type": "page",
+    "href": "https://quetzaldex.xyz",
+    "newWindow": true
+  },
+  "faucet-link": {
+    "title": "Faucet ↗",
+    "type": "page",
+    "href": "https://faucet.quetzaldex.xyz",
+    "newWindow": true
+  },
+  "github-link": {
+    "title": "GitHub ↗",
+    "type": "page",
+    "href": "https://github.com/Kubudak90/quetzal",
+    "newWindow": true
+  }
+}

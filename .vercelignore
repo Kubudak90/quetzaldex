@@ -1,0 +1,44 @@
+# Vercel deploy excludes (Sub-6c frontend → @quetzal/frontend Vite static)
+# Only the frontend + its workspace deps (sdk + cli + tools) need to be in the deploy context.
+# Everything else is monorepo bloat for the static build.
+
+# Design source reference (3MB of HTML/JSX prototypes; not needed at build time)
+frontend/_design-source/
+
+# Aztec L2 contracts (Noir).
+# NOTE: contracts/ is intentionally NOT excluded — the browser contract loader
+# (sdk/src/internal/contracts.browser.ts) bundles contracts/*/target/*.json via
+# the codegen'd bindings, so those committed artifacts must stay in the deploy
+# context. Only the compiled JSONs are committed (rest of target/ is gitignored).
+contracts-l1/
+circuits/
+
+# L1 tooling + ops.
+# NOTE: tests/ is intentionally NOT excluded — tests/integration/generated/*.ts
+# are the codegen'd contract bindings the frontend bundle imports.
+tools/
+aggregator/
+scripts/
+docs/
+
+# Local state + secrets
+.env*
+testnet-*-state.json
+deploy-bridge-state.json
+quetzal.config.json
+quetzal.config.m3-backup.json
+
+# Build artifacts
+frontend/dist/
+sdk/dist/
+node_modules/
+.vite/
+*.log
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+
+# Memory + planning artifacts
+.claude/

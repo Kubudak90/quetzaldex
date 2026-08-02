@@ -1,0 +1,27 @@
+{
+  "name": "@quetzal/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "quetzal": "src/index.ts"
+  },
+  "scripts": {
+    "quetzal": "tsx src/index.ts",
+    "test": "node --import tsx --test --test-reporter=spec 'src/**/*.test.ts'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aztec/aztec.js": "5.0.0",
+    "@aztec/foundation": "5.0.0",
+    "@aztec/wallets": "5.0.0",
+    "@quetzal/sdk": "workspace:*",
+    "commander": "^12.1.0",
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

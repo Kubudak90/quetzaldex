@@ -1,0 +1,36 @@
+route:
+  receiver: default
+  group_by: [alertname, severity]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers: [severity = "page"]
+      receiver: pagerduty
+      group_wait: 0s
+    - matchers: [severity = "warn"]
+      receiver: slack
+
+receivers:
+  - name: default
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL}"
+        channel: "#quetzal-ops"
+        send_resolved: true
+        title: "[{{ .Status | toUpper }}] {{ .GroupLabels.alertname }}"
+        text: "{{ range .Alerts }}{{ .Annotations.summary }}\n{{ .Annotations.description }}\n{{ end }}"
+
+  - name: slack
+    slack_configs:
+      - api_url: "${SLACK_WEBHOOK_URL}"
+        channel: "#quetzal-ops"
+        send_resolved: true
+        title: "[{{ .Status | toUpper }} severity=warn] {{ .GroupLabels.alertname }}"
+        text: "{{ range .Alerts }}{{ .Annotations.summary }}\n{{ .Annotations.description }}\n{{ end }}"
+
+  - name: pagerduty
+    pagerduty_configs:
+      - routing_key: "${PAGERDUTY_ROUTING_KEY}"
+        send_resolved: true
+        description: "{{ .GroupLabels.alertname }}: {{ range .Alerts }}{{ .Annotations.summary }} {{ end }}"
+        severity: critical

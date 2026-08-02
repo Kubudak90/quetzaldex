@@ -67,7 +67,7 @@ Yes. The aggregator code is in `aggregator/`. You need:
 - A funded Aztec L2 wallet
 - A bond posted to `AggregatorRegistry` via `client.aggregator.register()`
 - `nargo` + `bb` binaries (~1 GB of toolchain)
-- A VPS (the existing one is at `161.97.110.1`; the reference Docker setup lives in `aggregator/Dockerfile`)
+- A VPS you control (the reference Docker setup lives in `aggregator/Dockerfile`)
 
 See `aggregator/ops/RUNBOOK-aggregator.md` for the full setup. Today the testnet runs a single reference aggregator; the bonded race is designed but not yet contested.
 

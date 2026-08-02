@@ -3,7 +3,7 @@
 # Phase 1: poll daemon /health until block >= CLOSES (epoch 1 expiry).
 # Phase 2: capture the clear cycle (drain/validate/prove/submit) outcome.
 set -u
-SSH="ssh -o BatchMode=yes -o ConnectTimeout=12 root@194.163.136.1"
+SSH="ssh -o BatchMode=yes -o ConnectTimeout=12 root@${QUETZAL_SSH_HOST:-aggregator.quetzaldex.xyz}"
 CLOSES=104419
 LOG=/tmp/q_clear_watch.log
 : > "$LOG"

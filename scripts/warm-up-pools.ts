@@ -59,7 +59,7 @@ if (!NODE_URL.includes("testnet")) {
   );
 }
 
-const AGG_URL  = process.env.AGG_URL ?? "http://194.163.136.1:3001";
+const AGG_URL  = process.env.AGG_URL ?? "https://aggregator.quetzaldex.xyz";
 const M1_STATE = "testnet-m1-state.json";
 const CONFIG   = "quetzal.config.json";
 const STATE    = "warm-up-state.json";

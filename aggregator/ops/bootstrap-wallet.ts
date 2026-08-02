@@ -19,7 +19,7 @@
  *
  * Usage:
  *   FAUCET_URL=https://faucet.quetzaldex.xyz \
- *   FAUCET_BYPASS_KEY=$(ssh root@194.163.136.1 'grep BYPASS_KEY /root/quetzal-faucet/faucet/.env.faucet | cut -d= -f2') \
+ *   FAUCET_BYPASS_KEY=$(ssh root@aggregator.quetzaldex.xyz 'grep BYPASS_KEY /root/quetzal-faucet/faucet/.env.faucet | cut -d= -f2') \
  *   pnpm tsx aggregator/ops/bootstrap-wallet.ts
  *
  * Re-run with --use-existing to skip the drip step (e.g. after a partial

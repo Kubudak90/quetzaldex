@@ -65,7 +65,7 @@ if (!NODE_URL.includes("testnet")) {
 // Nethermind public Aztec faucet — fee-juice only.
 const NETHERMIND_FAUCET_URL =
   process.env.NETHERMIND_FAUCET_URL ?? "https://aztec-faucet.dev-nethermind.xyz";
-const AGG_URL     = process.env.AGG_URL ?? "http://194.163.136.1:3001";
+const AGG_URL     = process.env.AGG_URL ?? "https://aggregator.quetzaldex.xyz";
 const CONFIG      = "quetzal.config.json";
 const M1_STATE    = "testnet-m1-state.json";
 const STATE       = "sub9-e2e-smoke-nethermind-state.json";

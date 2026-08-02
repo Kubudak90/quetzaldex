@@ -17,7 +17,7 @@ const NODE = process.env.AZTEC_NODE_URL ?? "https://rpc.testnet.aztec-labs.com";
 const cfg = JSON.parse(readFileSync("quetzal.config.json", "utf8"));
 const m1 = JSON.parse(readFileSync("testnet-m1-state.json", "utf8"));
 const agg = JSON.parse(readFileSync("clearing-wallet-state.json", "utf8"));
-const AGG_URL = process.env.AGG_URL ?? "http://194.163.136.1:3001";
+const AGG_URL = process.env.AGG_URL ?? "https://aggregator.quetzaldex.xyz";
 
 const node = createAztecNodeClient(NODE);
 await waitForNode(node);

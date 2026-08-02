@@ -52,7 +52,7 @@ if (!FAUCET_BYPASS_KEY) {
     "FAUCET_BYPASS_KEY env var required (the hCaptcha bypass key — fetch from VPS faucet .env.faucet).",
   );
 }
-const AGG_URL     = process.env.AGG_URL ?? "http://194.163.136.1:3001";
+const AGG_URL     = process.env.AGG_URL ?? "https://aggregator.quetzaldex.xyz";
 const CONFIG      = "quetzal.config.json";
 const STATE       = "sub9-e2e-state.json";
 const PXE_DIR     = process.env.SMOKE_PXE_DIR ?? "./sub9-e2e-pxe";

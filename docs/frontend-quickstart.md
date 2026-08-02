@@ -9,7 +9,7 @@ Quetzal is a MEV-resistant dark-pool DEX on the Aztec Network. Orders are submit
 Clone the repo and install dependencies. Quetzal is a pnpm monorepo — all workspace packages wire automatically.
 
 ```bash
-git clone https://github.com/your-org/quetzal.git
+git clone https://github.com/Kubudak90/quetzaldex.git
 cd quetzal
 pnpm install
 ```

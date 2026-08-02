@@ -3,7 +3,7 @@
 ## Live
 
 - **Production:** [quetzaldex.xyz](https://quetzaldex.xyz)
-- **Repo:** [github.com/Kubudak90/quetzal](https://github.com/Kubudak90/quetzal) (public)
+- **Repo:** [github.com/Kubudak90/quetzaldex](https://github.com/Kubudak90/quetzaldex) (public)
 - **Vercel project:** `kubudak90s-projects/aztec-project` (id `prj_GpQRnDgJn9AX5jrsuqK5Jz20tyzG`)
 
 ## CI/CD

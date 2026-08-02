@@ -115,7 +115,7 @@ working through this.
 
 ```bash
 # 1. Clone on VPS
-ssh root@161.97.110.1 'mkdir -p /root/quetzal-aggregator && cd /root/quetzal-aggregator && git clone https://github.com/Kubudak90/quetzal.git .'
+ssh root@161.97.110.1 'mkdir -p /root/quetzal-aggregator && cd /root/quetzal-aggregator && git clone https://github.com/Kubudak90/quetzaldex.git .'
 
 # 2. Fill in .env.aggregator
 ssh root@161.97.110.1 'cp /root/quetzal-aggregator/aggregator/.env.aggregator.example /root/quetzal-aggregator/aggregator/.env.aggregator'

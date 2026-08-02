@@ -119,7 +119,7 @@ Fees come from the **0.3% swap fee** on every clearing-driven swap. The fee is w
 
 ## What's currently dormant
 
-Per [project_subproject2_complete.md](https://github.com/Kubudak90/quetzal/tree/main/docs):
+Per [project_subproject2_complete.md](https://github.com/Kubudak90/quetzaldex/tree/main/docs):
 
 - **LP-side is fully shipped.** Deposit / withdraw / position view all work standalone, with 21 Noir TXE tests + 71 JS aggregator tests passing the V3 math three-way (`circuits/clearing/src/buckets.nr` + `contracts/pool/src/buckets.nr` + `aggregator/src/buckets.ts`).
 - **End-to-end clearing through buckets is shipped + provable** since Sub-2.5 (witness builder + circuit shape 42 fields, bb prove confirmed, gate count 107,762).

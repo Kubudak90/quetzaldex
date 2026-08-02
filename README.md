@@ -1,8 +1,8 @@
 # Quetzal
 
-[![CI](https://github.com/Kubudak90/quetzal/actions/workflows/ci.yml/badge.svg)](https://github.com/Kubudak90/quetzal/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.1.0-blue)](https://github.com/Kubudak90/quetzal/releases)
-[![Testnet](https://img.shields.io/badge/aztec-alpha--testnet-7c5cff)](https://quetzaldex.xyz)
+[![CI](https://github.com/Kubudak90/quetzaldex/actions/workflows/ci.yml/badge.svg)](https://github.com/Kubudak90/quetzaldex/actions/workflows/ci.yml)
+[![Aztec](https://img.shields.io/badge/aztec-5.0.0-7c5cff)](https://docs.aztec.network)
+[![Testnet](https://img.shields.io/badge/network-alpha--testnet-D4FF28)](https://quetzaldex.xyz)
 
 **A private dark-pool exchange with ZK-verified batch clearing, built on [Aztec](https://aztec.network).**
 
@@ -14,7 +14,7 @@ sandwiching, no trusted operator.
 
 📖 **[Read the Litepaper](LITEPAPER.md)** for the full protocol design.
 
-## Live (v0.1, Aztec alpha-testnet)
+## Live (Aztec alpha-testnet)
 
 | | |
 |---|---|
@@ -101,7 +101,7 @@ deployment). Deployment and operator procedures live in `docs/deploy.md` and
 
 ## Status & roadmap
 
-This is **testnet software** (no external audit yet). What v0.1 has proven live,
+This is **testnet software** (no external audit yet). What has been proven live,
 the current limitations, and the roadmap (escrow refunds, threshold-encrypted
 reveals, multi-aggregator competition, mainnet track) are laid out in the
 [Litepaper](LITEPAPER.md) §6–7. Production-readiness lessons from the hardening

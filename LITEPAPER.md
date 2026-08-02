@@ -163,7 +163,7 @@ Running now on Aztec alpha-testnet (`quetzaldex.xyz`):
 - App: **https://quetzaldex.xyz**
 - Faucet: **https://faucet.quetzaldex.xyz**
 - Docs: **https://docs.quetzaldex.xyz**
-- Source: **https://github.com/Kubudak90/quetzal**
+- Source: **https://github.com/Kubudak90/quetzaldex**
 - Built on **[Aztec](https://aztec.network)** (alpha-testnet, protocol 5.0.0)
 
 ---

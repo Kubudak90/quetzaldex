@@ -33,7 +33,7 @@ function FeatherGlyph({ size = 24 }: { size?: number }) {
 
 const APP_URL = 'https://quetzaldex.xyz';
 const FAUCET_URL = 'https://faucet.quetzaldex.xyz';
-const GITHUB_URL = 'https://github.com/Kubudak90/quetzal';
+const GITHUB_URL = 'https://github.com/Kubudak90/quetzaldex';
 const DOCS_URL = 'https://docs.quetzaldex.xyz';
 
 const config: DocsThemeConfig = {
@@ -55,7 +55,7 @@ const config: DocsThemeConfig = {
     </span>
   ),
   project: { link: GITHUB_URL },
-  docsRepositoryBase: 'https://github.com/Kubudak90/quetzal/tree/main/docs-site',
+  docsRepositoryBase: 'https://github.com/Kubudak90/quetzaldex/tree/main/docs-site',
   primaryHue: { dark: 75, light: 75 }, // chartreuse-ish (~ #D4FF28 hue)
   primarySaturation: { dark: 95, light: 70 },
   banner: {

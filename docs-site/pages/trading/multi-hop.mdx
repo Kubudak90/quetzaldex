@@ -67,7 +67,7 @@ The aggregator's witness for a 2-hop order is *strictly larger* than a 1-hop's �
 
 ## What's currently limited (carry-forward)
 
-The Sub-4 implementation is end-to-end provable but ships with **7 known limitations**, documented in [project_subproject4_complete.md](https://github.com/Kubudak90/quetzal/tree/main/docs):
+The Sub-4 implementation is end-to-end provable but ships with **7 known limitations**, documented in [project_subproject4_complete.md](https://github.com/Kubudak90/quetzaldex/tree/main/docs):
 
 1. **2-hop double-claim** — partly closed by Sub-5a's per-hop nullifier; one corner case (cancel-then-claim race) is still open. **Don't submit 2-hop orders + then cancel them in the same epoch.**
 2. **1-hop DoS gap** — closed in Sub-5a circuit block B' (276K → 281K gates).

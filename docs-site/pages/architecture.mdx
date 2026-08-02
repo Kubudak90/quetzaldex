@@ -174,7 +174,7 @@ See `aggregator/ops/RUNBOOK-aggregator.md` for the production runbook.
 
 - ✅ L1 contracts (`contracts-l1/`) have a Slither report at `contracts-l1/audit/slither-2026-05-23.txt` + an audit snapshot tag `sub5c-audit-snapshot`. **External audit is still pending.**
 - ✅ L2 contracts + clearing circuit — TXE tested, bb-prove verified, and as of v0.1.0 **validated with live on-chain settlements** including the first multi-pool clearing (3 pools / 3 fills / 1 proof, 2026-06-10) and adversarial acceptance (fabricated state, wrong pool id, mismatched flows all revert with exact messages). No external audit yet.
-- ✅ Aggregator (TypeScript) — 115 unit tests; live-hardened (anchor-drift self-heal, fee gates, race guards — see [`docs/mainnet-lessons.md`](https://github.com/Kubudak90/quetzal/blob/main/docs/mainnet-lessons.md)). No external audit.
+- ✅ Aggregator (TypeScript) — 115 unit tests; live-hardened (anchor-drift self-heal, fee gates, race guards — see [`docs/mainnet-lessons.md`](https://github.com/Kubudak90/quetzaldex/blob/main/docs/mainnet-lessons.md)). No external audit.
 
 See `contracts-l1/AUDIT.md` for the threat model + T-XX item list.
 
@@ -225,4 +225,4 @@ The project ships in **sub-projects**, each one ~2 weeks of work. Headline sub-p
 | 9.4 | 2026-05-29 | EPOCH_LENGTH = 10 redeploy (UX: 75 min → 8–15 min) | `project_sub94_epoch10_redeploy` |
 | 9.8 | 2026-05-29 | This documentation site | — |
 
-For commit-level detail follow the [GitHub repo](https://github.com/Kubudak90/quetzal/commits/main).
+For commit-level detail follow the [GitHub repo](https://github.com/Kubudak90/quetzaldex/commits/main).

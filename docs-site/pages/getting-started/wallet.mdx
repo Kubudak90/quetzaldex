@@ -38,7 +38,7 @@ The pool is fully deterministic. Given a `masterSecret` (32 bytes hex), the i-th
 child_i = sha256(masterSecret || u32_be(i)) modulo bn254_field
 ```
 
-The result is masked to fit inside Aztec's bn254 scalar field. The original implementation used a plain `sha256(...) & mask` truncation which had a ~35% chance of overflowing the field; the SDK now uses [rejection sampling](https://github.com/Kubudak90/quetzal/blob/main/sdk/src/wallet/pool.ts) — keep rolling until the candidate is in range. This means a child's index `i` is *not* the same as the number of sha256 rounds, but the mapping is stable for a given master secret.
+The result is masked to fit inside Aztec's bn254 scalar field. The original implementation used a plain `sha256(...) & mask` truncation which had a ~35% chance of overflowing the field; the SDK now uses [rejection sampling](https://github.com/Kubudak90/quetzaldex/blob/main/sdk/src/wallet/pool.ts) — keep rolling until the candidate is in range. This means a child's index `i` is *not* the same as the number of sha256 rounds, but the mapping is stable for a given master secret.
 
 **Implication:** the same master secret + the same `n` always produces the same N child addresses. Lose the secret, lose the pool. Save it.
 

@@ -68,7 +68,7 @@ The operator's wallets must be pre-funded:
 
 ```
 # 1. Clone on VPS
-ssh root@161.97.110.1 'mkdir -p /root/quetzal-faucet && cd /root/quetzal-faucet && git clone https://github.com/Kubudak90/quetzal.git .'
+ssh root@161.97.110.1 'mkdir -p /root/quetzal-faucet && cd /root/quetzal-faucet && git clone https://github.com/Kubudak90/quetzaldex.git .'
 
 # 2. Fill in .env.faucet (paste secrets per template)
 ssh root@161.97.110.1 'cp /root/quetzal-faucet/faucet/.env.faucet.example /root/quetzal-faucet/faucet/.env.faucet'

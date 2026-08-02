@@ -117,7 +117,7 @@ You don't need to claim immediately. The fills root is persistent. But until you
 
 **What is statistical:**
 
-- Timing correlation between a deposit, a place_order, and a claim_fill can deanonymize a single-shot user. The K-decoy [anonymity-set submit](https://github.com/Kubudak90/quetzal/blob/main/sdk/src/orders.ts) (`placeOrderBulk` with `decoyCount > 0`) reduces this by emitting K extra indistinguishable orders in the same epoch.
+- Timing correlation between a deposit, a place_order, and a claim_fill can deanonymize a single-shot user. The K-decoy [anonymity-set submit](https://github.com/Kubudak90/quetzaldex/blob/main/sdk/src/orders.ts) (`placeOrderBulk` with `decoyCount > 0`) reduces this by emitting K extra indistinguishable orders in the same epoch.
 - The aggregator sees plaintext reveals during clearing. There is one aggregator per epoch (winner of the bonded race). If that aggregator logs reveals, anyone with access to its logs sees plaintext. Sub-6d (T-of-N multi-sig aggregator) is the long-term mitigation. For now, every aggregator is reputational.
 
 **What is NOT private (AUDIT items):**

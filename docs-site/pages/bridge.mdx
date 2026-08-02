@@ -41,7 +41,7 @@ The SDK then parses the receipt's `L1Inbox.MessageSent(checkpointNumber, index, 
 
 ### Wait for L2 inbox ingestion (~6–10 min)
 
-Aztec's sequencer batches L1 messages into its inbox tree on L2. Your deposit message becomes claimable once it's included in a finalised L2 block. The [`getMessageReady`](https://github.com/Kubudak90/quetzal/blob/main/sdk/src/bridge.ts) call polls until your message lands.
+Aztec's sequencer batches L1 messages into its inbox tree on L2. Your deposit message becomes claimable once it's included in a finalised L2 block. The [`getMessageReady`](https://github.com/Kubudak90/quetzaldex/blob/main/sdk/src/bridge.ts) call polls until your message lands.
 
 ### Claim on L2
 
@@ -80,7 +80,7 @@ Once `buildOutboxProof` returns a non-error result, the *Withdraw on L1* button 
 | **Public** | L1 tokens unlocked → L2 public balance credited | L2 public balance burned → L1 tokens unlocked |
 | **Private** | L1 tokens unlocked → L2 private note credited (you keep a secret) | L2 private note nullified → L1 tokens unlocked to a specified recipient |
 
-The Private deposit path needs you to remember a `claimSecret` between deposit + claim. The Sub-7c UI persists it in `localStorage`; if you lose it, the deposit is recoverable via the [3-phase `recoverDeposit`](https://github.com/Kubudak90/quetzal/blob/main/contracts-l1/src/TokenBridge.sol) governance flow after a 90-day window.
+The Private deposit path needs you to remember a `claimSecret` between deposit + claim. The Sub-7c UI persists it in `localStorage`; if you lose it, the deposit is recoverable via the [3-phase `recoverDeposit`](https://github.com/Kubudak90/quetzaldex/blob/main/contracts-l1/src/TokenBridge.sol) governance flow after a 90-day window.
 
 ## Governance + emergency pause
 
@@ -121,8 +121,8 @@ Each asset has a per-asset cap. On testnet the caps are large; on mainnet the la
 
 ## Reference
 
-- L1 contract: [`contracts-l1/src/TokenBridge.sol`](https://github.com/Kubudak90/quetzal/blob/main/contracts-l1/src/TokenBridge.sol)
-- L2 token bridge mode: [`contracts/token/src/main.nr`](https://github.com/Kubudak90/quetzal/blob/main/contracts/token/src/main.nr) (`claim_public`, `claim_private`, `exit_to_l1_public`, `exit_to_l1_private`)
+- L1 contract: [`contracts-l1/src/TokenBridge.sol`](https://github.com/Kubudak90/quetzaldex/blob/main/contracts-l1/src/TokenBridge.sol)
+- L2 token bridge mode: [`contracts/token/src/main.nr`](https://github.com/Kubudak90/quetzaldex/blob/main/contracts/token/src/main.nr) (`claim_public`, `claim_private`, `exit_to_l1_public`, `exit_to_l1_private`)
 - SDK methods: `client.bridge.deposit`, `getMessageReady`, `claim`, `exit`, `prepareL1Withdraw`
 - Runbook (operator): `aggregator/ops/RUNBOOK-bridge.md`
 - Audit notes: `contracts-l1/AUDIT.md`

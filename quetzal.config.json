@@ -3,9 +3,11 @@
   "admin": "0x1fdb4ff3473f0ea4b4b1d30d019a6a042c4e014ecea0a01ff209d1abe8b02856",
   "tUSDC": "0x28406d385702001e13128d90fcc3251bb55359c8e2238dd8db37e7e6af4e060f",
   "tETH": "0x2fcd3dd598380bd949f7d6cb9d57e0251e512bde7d05c36f7257bf8db6c3041f",
+  "tBTC": "0x26b455c2d154b71357e74bebdecfaebb8484ca023a00cddee597f5220d73b903",
   "orderbook": "0x2a9a1d0e8f1974267536abefa565e7a7351f92ddbe95ec13c57c79b70664f7c8",
   "treasury": "0x002dce0c006f279fe9caf31b1d11fd18222f94a2ffd4783deabe492acb4f659e",
   "aggregatorRegistry": "0x1d572066d43a1035daffb9df101c580d3227873cee19707dc39241928ebd6e5b",
+  "clearingVkHash": "0x20f45faf5c1d7ef17f6c1ad248cd7c032636d908c46c01f7f004bc26c75cd4f9",
   "pools": [
     {
       "pool_id": 0,
@@ -28,6 +30,7 @@
   ],
   "bucketPMinSqrt": "100000000000000000",
   "bucketGrowthNum": "1500000000000000000",
+  "epoch_length": 10,
   "l1": {
     "governanceTimelock": "0xFfa93dEaDd6B90D9A665338931C92fdAFacD648f",
     "emergencyTimelock": "0xaEaCC3EAC9e735856E59319A29C5787ce00E12C2",
@@ -35,7 +38,5 @@
     "wethBridge": "0x996e71253bC97CF18583aec9C9e8AAe197dce75a",
     "wbtcBridge": "0x949B3A65F09Cc7650239fBB8483b632a750F2EA3",
     "l2Version": 1821665230
-  },
-  "tBTC": "0x26b455c2d154b71357e74bebdecfaebb8484ca023a00cddee597f5220d73b903",
-  "epoch_length": 10
+  }
 }

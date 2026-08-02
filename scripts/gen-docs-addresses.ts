@@ -23,7 +23,7 @@ interface Pool { pool_id: number; address: string; token_a: string; token_b: str
 interface Config {
   nodeUrl: string; admin: string; orderbook: string; treasury: string;
   aggregatorRegistry: string; tUSDC: string; tETH: string; tBTC: string;
-  pools: Pool[]; epoch_length: number;
+  pools: Pool[]; epoch_length: number; clearingVkHash?: string;
   bucketPMinSqrt: string; bucketGrowthNum: string;
   l1: {
     governanceTimelock: string; emergencyTimelock: string;
@@ -33,10 +33,11 @@ interface Config {
 
 const cfg = JSON.parse(readFileSync(CONFIG, "utf8")) as Config;
 
-// The deployed clearing vk_hash is pinned by the redeploy that produced this
-// orderbook; fall back to a placeholder rather than printing a stale one.
-let vkHash = "(see redeploy-testnet-state.json)";
-if (existsSync(STATE)) {
+// The deployed clearing vk_hash lives in the config alongside the addresses it
+// belongs to. redeploy-testnet-state.json is a gitignored per-run artifact, so
+// reading it here would make this generator unrunnable on a fresh clone.
+let vkHash = cfg.clearingVkHash ? `\`${cfg.clearingVkHash}\`` : "(not recorded)";
+if (!cfg.clearingVkHash && existsSync(STATE)) {
   const st = JSON.parse(readFileSync(STATE, "utf8")) as { vkHash?: string; orderbook?: string };
   if (st.vkHash && st.orderbook?.toLowerCase() === cfg.orderbook.toLowerCase()) vkHash = `\`${st.vkHash}\``;
 }

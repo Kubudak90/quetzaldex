@@ -79,3 +79,13 @@ pages/
 ## Updating content
 
 Pull factual content from `quetzal.config.json`, the project memory under `~/.claude/projects/-Users-huseyinarslan-Desktop-aztec-project/memory/`, or from the SDK / aggregator / faucet source. Don't invent. Mark in-progress items as "work in progress".
+
+## Deploying
+
+Connected to the `quetzal-docs` Vercel project with **Root Directory = `docs-site`**,
+so a push to `main` that touches this folder deploys `docs.quetzaldex.xyz`
+automatically. No manual `vercel deploy` step.
+
+This used to be a manually-deployed project, which is how corrected docs sat in
+git for weeks without ever reaching the published site — if you change anything
+here, confirm it actually went live.

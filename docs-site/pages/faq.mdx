@@ -2,6 +2,8 @@
 title: FAQ
 ---
 
+import { Callout } from 'nextra/components';
+
 # FAQ
 
 ## Is this safe to use with real money?
@@ -84,7 +86,14 @@ The protocol-level dependencies (Aztec mainnet readiness) are also out of Quetza
 ## Where can I report a bug or vulnerability?
 
 - Non-security bugs: [github.com/Kubudak90/quetzaldex/issues](https://github.com/Kubudak90/quetzaldex/issues)
-- Security: the audit channel is being set up; for now, open a private GitHub security advisory at [github.com/Kubudak90/quetzaldex/security](https://github.com/Kubudak90/quetzaldex/security) or email the operator (contact via the GitHub profile).
+- Security: email **[security@quetzaldex.xyz](mailto:security@quetzaldex.xyz)**, or open a private advisory at [github.com/Kubudak90/quetzaldex/security](https://github.com/Kubudak90/quetzaldex/security). Please do not open a public issue for a vulnerability.
+
+<Callout type="warning">
+  `quetzaldex.xyz` publishes a strict DMARC policy (`p=reject`) and authorises no
+  senders it does not control, so mail that *claims* to come from this domain and
+  fails authentication is rejected outright. We will never DM you first, never ask
+  for a seed phrase or private key, and never ask you to "verify" a wallet.
+</Callout>
 
 ## How is Quetzal different from Penumbra Quetzal?
 

@@ -12,21 +12,27 @@
     "title": "Elsewhere"
   },
   "app-link": {
-    "title": "App ↗",
+    "title": "App \u2197",
     "type": "page",
     "href": "https://quetzaldex.xyz",
     "newWindow": true
   },
   "faucet-link": {
-    "title": "Faucet ↗",
+    "title": "Faucet \u2197",
     "type": "page",
     "href": "https://faucet.quetzaldex.xyz",
     "newWindow": true
   },
   "github-link": {
-    "title": "GitHub ↗",
+    "title": "GitHub \u2197",
     "type": "page",
     "href": "https://github.com/Kubudak90/quetzaldex",
+    "newWindow": true
+  },
+  "x": {
+    "title": "X \u2197",
+    "type": "page",
+    "href": "https://x.com/Quetzaldex",
     "newWindow": true
   }
 }

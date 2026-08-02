@@ -21,6 +21,7 @@ sandwiching, no trusted operator.
 | **App** | https://quetzaldex.xyz |
 | **Faucet** | https://faucet.quetzaldex.xyz |
 | **Docs** | https://docs.quetzaldex.xyz |
+| **X** | https://x.com/Quetzaldex |
 
 What's running: onboarding wizard (wallet + tokens + fee juice in one flow), private
 trading on 3 pairs (USDC/ETH, USDC/BTC, ETH/BTC), L1↔L2 bridging (Sepolia USDC/WETH),

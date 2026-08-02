@@ -5,6 +5,7 @@
 // One definition so they can't disagree again.
 
 export const GITHUB_URL = "https://github.com/Kubudak90/quetzaldex";
+export const TWITTER_URL = "https://x.com/Quetzaldex";
 export const LITEPAPER_URL = "https://github.com/Kubudak90/quetzaldex/blob/main/LITEPAPER.md";
 export const DOCS_URL = (import.meta.env.VITE_DOCS_URL as string | undefined) ?? "https://docs.quetzaldex.xyz";
 export const FAUCET_URL = (import.meta.env.VITE_FAUCET_URL as string | undefined) ?? "https://faucet.quetzaldex.xyz";

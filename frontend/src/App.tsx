@@ -16,7 +16,7 @@ import {
 import { useClientContext } from "./sdk/client-context.js";
 import { L1ConnectButton } from "./l1/connect-button.js";
 import { useIsMobile } from "./hooks/use-media-query.js";
-import { DOCS_URL, GITHUB_URL, AZTEC_VERSION, SDK_VERSION } from "./constants.js";
+import { DOCS_URL, GITHUB_URL, TWITTER_URL, AZTEC_VERSION, SDK_VERSION } from "./constants.js";
 
 const VALID_ROUTES = ["landing", "setup", "trade", "bridge", "wallet", "history", "settings"] as const;
 type Route = (typeof VALID_ROUTES)[number];
@@ -405,6 +405,8 @@ function SideNav({ route, setRoute }: SideNavProps) {
           <a href={DOCS_URL} target="_blank" rel="noopener noreferrer" style={{ color: "var(--fg-muted)" }}>Docs ↗</a>
           &nbsp;·&nbsp;
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" style={{ color: "var(--fg-muted)" }}>GitHub ↗</a>
+          &nbsp;·&nbsp;
+          <a href={TWITTER_URL} target="_blank" rel="noopener noreferrer" style={{ color: "var(--fg-muted)" }}>X ↗</a>
         </div>
       </div>
     </nav>

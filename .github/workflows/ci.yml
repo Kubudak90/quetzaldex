@@ -66,6 +66,9 @@ jobs:
       - name: Unit tests — @quetzal/frontend (vitest)
         run: pnpm -F @quetzal/frontend test
 
+      - name: Contract artifact VKs match the pinned toolchain
+        run: pnpm exec tsx scripts/check-artifact-vks.ts
+
       - name: Docs addresses match quetzal.config.json
         run: pnpm exec tsx scripts/gen-docs-addresses.ts --check
 

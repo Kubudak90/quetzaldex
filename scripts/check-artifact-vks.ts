@@ -19,14 +19,18 @@
  * .github/workflows/ci.yml). This is the cheap 99%: read what is committed and
  * check the verification keys are the right size, with no toolchain at all.
  *
- * Two layers, because they fail differently:
- *   1. Self-consistency — every private function across every artifact must carry
- *      the same VK size. This catches the *actual* failure mode (a subset of
- *      artifacts rebuilt, the rest stale) even for an Aztec version this script
- *      has never heard of, so it cannot rot on the next bump.
- *   2. Absolute size — when `.aztec-version` is a version we know the expected
- *      size for, enforce it. This additionally catches "everything is uniformly
- *      stale", which layer 1 cannot see.
+ * Two checks, giving different levels of certainty:
+ *   1. Compatibility — when `.aztec-version` is a version we know the expected VK
+ *      size for, validate every key against it. This is the strong one: it names
+ *      the offending functions outright, whether they are a subset or all of them.
+ *   2. Consistency — the fallback when we have no expected size. Mixed sizes prove
+ *      that only part of the set was rebuilt, but NOT which part is stale: the
+ *      stale artifacts can perfectly well be the majority, so counting them and
+ *      calling the minority wrong would be a coin flip dressed up as a verdict.
+ *      It therefore reports the split and stops short of assigning blame.
+ *
+ * Keeping (2) means the check still catches a partial rebuild on an Aztec version
+ * this script has never heard of, so it cannot silently rot on the next bump.
  *
  * Usage: tsx scripts/check-artifact-vks.ts
  */
@@ -81,41 +85,46 @@ if (keys.length === 0) {
 }
 
 const sizes = [...new Set(keys.map((k) => k.bytes))].sort((a, b) => a - b);
+const version = existsSync(".aztec-version") ? readFileSync(".aztec-version", "utf8").trim() : "";
+const expected = EXPECTED_VK_BYTES[version];
 
-// Layer 1: every artifact must agree with every other one.
+// Compatibility check — only possible when we know what the pinned toolchain emits,
+// and strictly better than the consistency check when we do: it names the offending
+// functions outright, whether they are a subset or all of them.
+if (expected !== undefined) {
+  const bad = keys.filter((k) => k.bytes !== expected);
+  if (bad.length > 0) {
+    console.error(`[check-artifact-vks] FAIL: incompatible verification key size for aztec ${version}.`);
+    console.error(`  Expected ${expected} bytes; ${bad.length} of ${keys.length} keys differ.`);
+    console.error("  Rebuild the affected artifacts with the pinned toolchain and commit them");
+    console.error("  (`git add -f contracts/*/target/*.json`), or update EXPECTED_VK_BYTES if the");
+    console.error("  toolchain legitimately changed the size.\n");
+    for (const k of bad) {
+      console.error(`    ${k.contract}::${k.fn} — ${k.bytes} bytes`);
+    }
+    process.exit(1);
+  }
+  console.log(`[check-artifact-vks] OK: ${keys.length} private-function keys, all ${expected} bytes (aztec ${version}).`);
+  process.exit(0);
+}
+
+// Consistency check — the fallback for a toolchain version we have no expected size
+// for. It can prove the set is inconsistent, but NOT which group is correct: the
+// stale artifacts may well be the majority. So report the split and stop short of a
+// verdict rather than guessing.
 if (sizes.length > 1) {
-  const majority = sizes
-    .map((s) => ({ size: s, count: keys.filter((k) => k.bytes === s).length }))
-    .sort((a, b) => b.count - a.count)[0].size;
   console.error(`[check-artifact-vks] FAIL: mixed verification key sizes: ${sizes.join(", ")} bytes.`);
-  console.error("  Some artifacts were rebuilt and others were not — the odd ones out are stale.");
-  console.error("  Recompile everything and commit the result (`git add -f contracts/*/target/*.json`).\n");
-  for (const k of keys.filter((k) => k.bytes !== majority)) {
-    console.error(`    ${k.contract}::${k.fn} — ${k.bytes} bytes (most artifacts are ${majority})`);
+  console.error("  Artifacts appear to come from different toolchain builds — only some were rebuilt.");
+  console.error("  Which group is stale cannot be determined here (no expected size recorded for");
+  console.error(`  aztec ${version || "<unknown>"}); rebuild ALL artifacts with the pinned toolchain.\n`);
+  for (const s of sizes) {
+    console.error(`    ${s} bytes:`);
+    for (const k of keys.filter((k) => k.bytes === s)) console.error(`      ${k.contract}::${k.fn}`);
   }
   process.exit(1);
 }
 
-// Layer 2: if we know what this toolchain should emit, enforce the absolute size.
-const version = existsSync(".aztec-version") ? readFileSync(".aztec-version", "utf8").trim() : "";
-const expected = EXPECTED_VK_BYTES[version];
-const actual = sizes[0];
-
-if (expected === undefined) {
-  console.log(
-    `[check-artifact-vks] OK (consistency only): ${keys.length} keys, all ${actual} bytes. ` +
-      `No expected size recorded for aztec ${version || "<unknown>"} — add one to EXPECTED_VK_BYTES.`,
-  );
-  process.exit(0);
-}
-
-if (actual !== expected) {
-  console.error(
-    `[check-artifact-vks] FAIL: every artifact carries ${actual}-byte keys, but aztec ${version} emits ${expected}.`,
-  );
-  console.error("  All artifacts are uniformly stale — recompile and commit them, or update");
-  console.error("  EXPECTED_VK_BYTES if the toolchain legitimately changed the size.");
-  process.exit(1);
-}
-
-console.log(`[check-artifact-vks] OK: ${keys.length} private-function keys, all ${actual} bytes (aztec ${version}).`);
+console.log(
+  `[check-artifact-vks] OK (consistency only): ${keys.length} keys, all ${sizes[0]} bytes. ` +
+    `No expected size recorded for aztec ${version || "<unknown>"} — add one to EXPECTED_VK_BYTES.`,
+);

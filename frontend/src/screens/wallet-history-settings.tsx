@@ -12,6 +12,7 @@ import {
 } from "../components/atoms.js";
 import { PoolCapacityBar, TokenGlyph } from "../components/screens-shared.js";
 import { useIsMobile } from "../hooks/use-media-query.js";
+import { FAUCET_URL } from "../constants.js";
 import { LiquidityPanel } from "./wallet/liquidity-panel.js";
 import { resettableKeys } from "./reset-local-state.js";
 import { loadPendingClaims } from "./bridge/pending-claims.js";
@@ -193,10 +194,13 @@ export function WalletScreen({ pushToast }: WalletScreenProps) {
                       doRefuel();
                     } else {
                       // Non-connected children can't be refueled in-app (we only hold the
-                      // connected wallet's signer); deep-link to the external faucet.
-                      const url = `https://aztec-faucet.dev-nethermind.xyz/?address=${encodeURIComponent(c.addr)}`;
+                      // connected wallet's signer); deep-link to our own faucet, which
+                      // prefills from ?address=. Also copy the address, so this still
+                      // works if the faucet build in front of us predates that support.
+                      const url = `${FAUCET_URL.replace(/\/+$/, "")}/?address=${encodeURIComponent(c.addr)}`;
                       window.open(url, "_blank", "noopener,noreferrer");
-                      pushToast({ kind: "ok", text: "Opened Aztec faucet in new tab. Drip + refresh page." });
+                      void navigator.clipboard?.writeText(c.addr).catch(() => {});
+                      pushToast({ kind: "ok", text: "Opened the Quetzal faucet in a new tab (address copied). Drip, then refresh." });
                     }
                   }}
                 />

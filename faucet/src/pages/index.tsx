@@ -71,6 +71,14 @@ export default function FaucetPage() {
     return () => clearInterval(t);
   }, []);
 
+  // Prefill from ?address= so the app can deep-link here for a wallet it cannot
+  // refuel in-app (it only holds the connected wallet's signer). Validated
+  // before use — a bad param is ignored rather than dropped into the field.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("address")?.trim();
+    if (q && isValidAztecAddress(q)) setAddress(q);
+  }, []);
+
   // reCAPTCHA v3 script — only when the server requires captcha.
   useEffect(() => {
     if (!config?.requireCaptcha || !config.recaptchaSiteKey || captchaLoaded.current) return;

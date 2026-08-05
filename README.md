@@ -110,4 +110,4 @@ cycle are documented in [`docs/mainnet-lessons.md`](docs/mainnet-lessons.md).
 
 ## License
 
-MIT.
+MIT — see [LICENSE](LICENSE).
